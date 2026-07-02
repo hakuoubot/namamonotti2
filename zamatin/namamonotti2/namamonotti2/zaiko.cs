@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -10,11 +10,18 @@ using System.Windows.Forms;
 
 namespace namamonotti2
 {
-    public partial class zaiko : Form
+    public partial class zaiko : UserControl
     {
+        readonly MainForm? _main;
+
         public zaiko()
         {
             InitializeComponent();
+        }
+
+        public zaiko(MainForm main) : this()
+        {
+            _main = main;
         }
     }
 }

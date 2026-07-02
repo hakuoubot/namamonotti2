@@ -1,4 +1,4 @@
-﻿namespace namamonotti2
+namespace namamonotti2
 {
     partial class zukan
     {
@@ -20,7 +20,7 @@
             base.Dispose(disposing);
         }
 
-        #region Windows Form Designer generated code
+        #region Component Designer generated code
 
         /// <summary>
         /// Required method for Designer support - do not modify
@@ -30,8 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Text = "Form1";
+            this.Name = "zukan";
+            this.Size = new System.Drawing.Size(880, 560);
         }
 
         #endregion
