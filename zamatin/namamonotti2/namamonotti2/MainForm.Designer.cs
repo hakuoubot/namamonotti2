@@ -11,53 +11,6 @@ namespace namamonotti2
             base.Dispose(disposing);
         }
 
-        private Panel MakeDexCard(
-    string emoji,
-    string name,
-    string countText,
-    string dateText)
-        {
-            // カード本体
-            Panel card = new Panel();
-            card.Width = 120;
-            card.Height = 150;
-            card.BackColor = Color.Beige;
-            card.Margin = new Padding(10);
-
-            // 絵文字
-            Label emojiLabel = new Label();
-            emojiLabel.Text = emoji;
-            emojiLabel.Font = new Font("Segoe UI Emoji", 24);
-            emojiLabel.TextAlign = ContentAlignment.MiddleCenter;
-            emojiLabel.SetBounds(0, 10, 120, 40);
-
-            // 名前
-            Label nameLabel = new Label();
-            nameLabel.Text = name;
-            nameLabel.TextAlign = ContentAlignment.MiddleCenter;
-            nameLabel.SetBounds(0, 60, 120, 20);
-
-            // 回数
-            Label countLabel = new Label();
-            countLabel.Text = countText;
-            countLabel.TextAlign = ContentAlignment.MiddleCenter;
-            countLabel.ForeColor = Color.Green;
-            countLabel.SetBounds(0, 85, 120, 20);
-
-            // 日付
-            Label dateLabel = new Label();
-            dateLabel.Text = dateText;
-            dateLabel.TextAlign = ContentAlignment.MiddleCenter;
-            dateLabel.SetBounds(0, 110, 120, 20);
-
-            card.Controls.Add(emojiLabel);
-            card.Controls.Add(nameLabel);
-            card.Controls.Add(countLabel);
-            card.Controls.Add(dateLabel);
-
-            return card;
-        }
-
         private void InitializeComponent()
         {
             sideNav = new Panel();
