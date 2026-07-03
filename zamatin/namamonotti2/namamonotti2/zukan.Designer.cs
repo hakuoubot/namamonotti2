@@ -28,12 +28,45 @@ namespace namamonotti2
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Name = "zukan";
-            this.Size = new System.Drawing.Size(880, 560);
+            statusLabel = new Label();
+            contentArea = new FlowLayoutPanel();
+            SuspendLayout();
+            // 
+            // statusLabel
+            // 
+            statusLabel.AutoSize = true;
+            statusLabel.Dock = DockStyle.Top;
+            statusLabel.Location = new Point(0, 0);
+            statusLabel.Name = "statusLabel";
+            statusLabel.Size = new Size(59, 25);
+            statusLabel.TabIndex = 0;
+            statusLabel.Text = "label1";
+            // 
+            // contentArea
+            // 
+            contentArea.AutoScroll = true;
+            contentArea.Dock = DockStyle.Fill;
+            contentArea.Location = new Point(0, 25);
+            contentArea.Name = "contentArea";
+            contentArea.Size = new Size(880, 535);
+            contentArea.TabIndex = 1;
+            // 
+            // zukan
+            // 
+            AutoScaleDimensions = new SizeF(10F, 25F);
+            AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(contentArea);
+            Controls.Add(statusLabel);
+            Name = "zukan";
+            Size = new Size(880, 560);
+            Load += zukan_Load;
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
+
+        private Label statusLabel;
+        private FlowLayoutPanel contentArea;
     }
 }

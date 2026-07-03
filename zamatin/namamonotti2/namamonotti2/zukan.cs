@@ -23,5 +23,10 @@ namespace namamonotti2
         {
             _main = main;
         }
+
+        private void zukan_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }
