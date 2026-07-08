@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Data.SqlClient;
+using System.Configuration;
 
 namespace namamonotti2
 {
@@ -65,6 +67,45 @@ namespace namamonotti2
             unitBox.SelectedIndex = 0;
             datePicker.Value = DateTime.Today.AddDays(7);
             nameBox.Focus();
+
+            using (SqlConnection conn = new SqlConnection
+                (ConfigurationManager.ConnectionStrings["wiz"].ConnectionString))
+            using (SqlCommand cmd = new SqlCommand())
+            {
+                cmd.Connection = conn;
+
+                StringBuilder sql=new StringBuilder();
+                sql.Append(" INSERT INTO");
+                sql.Append("     dbo.food_Table ");
+                sql.Append(" (");
+                sql.Append("     FOODNAME");
+                sql.Append("    , DATELANE");
+                sql.Append("    , DATE");
+                sql.Append("    , GENRU");
+                sql.Append("    , FOODCOUNT");
+                sql.Append("    , UNIT");
+                sql.Append(" )");
+                sql.Append("VALUES ");
+                sql.Append(" (");
+                sql.Append("     @FOODNAME");
+                sql.Append("    ,@DATELANE");
+                sql.Append("    ,GETDATE()");
+                sql.Append("    ,@GENRU");
+                sql.Append("    ,@FOODCOUNT");
+                sql.Append("    ,@UNIT");
+                sql.Append(" )");
+
+                cmd.CommandText = sql.ToString();
+
+                cmd.Parameters.Add("@FOODNAME",SqlDbType.NVarChar).Value=nameBox.Text;
+                cmd.Parameters.Add("@DATELANE",SqlDbType.Date).Value=datePicker.Value;
+                cmd.Parameters.Add("@GENRU",SqlDbType.NVarChar).Value=categoryBox.Text;
+                cmd.Parameters.Add("@FOODCOUNT",SqlDbType.NVarChar).Value = qtyBox.Text;
+                cmd.Parameters.Add("@UNIT",SqlDbType.NVarChar).Value=unitBox.Text;
+
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
         }
     }
 }
