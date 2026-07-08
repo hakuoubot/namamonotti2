@@ -60,6 +60,7 @@ namespace namamonotti2
         // カテゴリ1件ぶんのカードを組み立てる
         // 成仏済み(unlocked)かどうかで、色・絵文字・表示文言を切り替える
         // 未成仏の場合：絵文字→「？」、名前・回数の文字色→グレー、回数→「未成仏」
+        // カテゴリ1件ぶんのカードを組み立てる
         Panel MakeDexCard(DexCategoryData cat)
         {
             bool unlocked = cat.Unlocked;
@@ -72,22 +73,32 @@ namespace namamonotti2
                 BackColor = unlocked ? Color.FromArgb(255, 243, 214) : Color.FromArgb(230, 230, 230),
                 Margin = new Padding(10)
             };
+
+            // カードの描画処理（枠線と、カラー絵文字を直接ここに描きます）
+            // カードの描画処理（枠線と、カラー絵文字を直接ここに描きます）
             card.Paint += (s, e) =>
             {
+                // ① 枠線を描く（元からのコード）
                 using var pen = new Pen(Color.FromArgb(255, 208, 224), 2);
                 e.Graphics.DrawRectangle(pen, 1, 1, card.Width - 3, card.Height - 3);
-            };
 
-            // 絵文字：未成仏なら「？」で隠す（まだ見たことがないキャラという演出）
-            var emojiLabel = new Label
-            {
-                Text = unlocked ? cat.Emoji : "？",
-                Font = new Font("Segoe UI Emoji", 26F),
-                TextAlign = ContentAlignment.MiddleCenter,
-                ForeColor = unlocked ? Color.Black : Color.FromArgb(180, 180, 180),
-                UseCompatibleTextRendering = true
+                // ★ここが超重要！カラー絵文字の色データを有効化する設定
+                e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+                // ② カラー絵文字を直接描画する
+                string emojiText = unlocked ? cat.Emoji : "？";
+                using var emojiFont = new Font("Segoe UI Emoji", 24F);
+                var sf = new StringFormat
+                {
+                    LineAlignment = StringAlignment.Center,
+                    Alignment = StringAlignment.Center
+                };
+                var emojiRect = new Rectangle(0, 12, 120, 52);
+
+                // カラー絵文字を描画するときは、Brushes.Black ではなく「SystemBrushes.WindowText」を使うか、
+                // Windowsの描画エンジン（TextRenderer）に任せると確実に色が出ます
+                TextRenderer.DrawText(e.Graphics, emojiText, emojiFont, emojiRect, Color. Black,TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
             };
-            emojiLabel.SetBounds(0, 10, 120, 65);
 
             // カテゴリ名（肉・魚・野菜など）
             var nameLabel = new Label
@@ -97,7 +108,7 @@ namespace namamonotti2
                 TextAlign = ContentAlignment.MiddleCenter,
                 ForeColor = unlocked ? Color.FromArgb(107, 74, 85) : Color.FromArgb(180, 180, 180)
             };
-            nameLabel.SetBounds(0, 75, 120, 20);
+            nameLabel.SetBounds(0, 68, 120, 20);
 
             // 成仏回数（未成仏なら「未成仏」と表示）
             var countLabel = new Label
@@ -107,7 +118,7 @@ namespace namamonotti2
                 TextAlign = ContentAlignment.MiddleCenter,
                 ForeColor = unlocked ? Color.FromArgb(63, 158, 126) : Color.FromArgb(177, 138, 150)
             };
-            countLabel.SetBounds(0, 100, 120, 20);
+            countLabel.SetBounds(0, 93, 120, 20);
 
             // 最後に成仏させた日付（未成仏なら空欄）
             var dateLabel = new Label
@@ -117,11 +128,16 @@ namespace namamonotti2
                 TextAlign = ContentAlignment.MiddleCenter,
                 ForeColor = Color.FromArgb(177, 138, 150)
             };
-            dateLabel.SetBounds(0, 125, 120, 20);
+            dateLabel.SetBounds(0, 118, 120, 20);
 
-            card.Controls.AddRange([emojiLabel, nameLabel, countLabel, dateLabel]);
+            // ラベルたちをカードに追加（emojiLabelは無いので除外しています）
+            card.Controls.AddRange([nameLabel, countLabel, dateLabel]);
+
             return card;
         }
+        
+
+           
 
         private void contentArea_Paint(object sender, PaintEventArgs e)
         {
