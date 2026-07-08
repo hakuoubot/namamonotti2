@@ -31,29 +31,30 @@ namespace namamonotti2
             hintLabel1 = new Label();
             contentArea = new FlowLayoutPanel();
             SuspendLayout();
-            //
+            // 
             // hintLabel1
-            //
+            // 
             hintLabel1.AutoSize = true;
             hintLabel1.Dock = DockStyle.Top;
             hintLabel1.Location = new Point(0, 0);
             hintLabel1.Name = "hintLabel1";
-            hintLabel1.Size = new Size(410, 25);
+            hintLabel1.Size = new Size(327, 25);
             hintLabel1.TabIndex = 0;
             hintLabel1.Text = "並び: 残日数が近い順（危険・ゾンビが上）";
-            //
+            // 
             // contentArea
-            //
+            // 
             contentArea.AutoScroll = true;
             contentArea.Dock = DockStyle.Fill;
             contentArea.FlowDirection = FlowDirection.TopDown;
             contentArea.Location = new Point(0, 25);
             contentArea.Name = "contentArea";
-            contentArea.Size = new Size(858, 479);
+            contentArea.Size = new Size(880, 535);
             contentArea.TabIndex = 1;
-            //
+            contentArea.Paint += contentArea_Paint;
+            // 
             // zaiko
-            //
+            // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(contentArea);

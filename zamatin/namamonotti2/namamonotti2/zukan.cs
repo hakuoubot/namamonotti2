@@ -82,11 +82,12 @@ namespace namamonotti2
             var emojiLabel = new Label
             {
                 Text = unlocked ? cat.Emoji : "？",
-                Font = new Font("Segoe UI Emoji", 24F),
+                Font = new Font("Segoe UI Emoji", 26F),
                 TextAlign = ContentAlignment.MiddleCenter,
-                ForeColor = unlocked ? Color.Black : Color.FromArgb(180, 180, 180)
+                ForeColor = unlocked ? Color.Black : Color.FromArgb(180, 180, 180),
+                UseCompatibleTextRendering = true
             };
-            emojiLabel.SetBounds(0, 10, 120, 40);
+            emojiLabel.SetBounds(0, 10, 120, 65);
 
             // カテゴリ名（肉・魚・野菜など）
             var nameLabel = new Label
@@ -96,7 +97,7 @@ namespace namamonotti2
                 TextAlign = ContentAlignment.MiddleCenter,
                 ForeColor = unlocked ? Color.FromArgb(107, 74, 85) : Color.FromArgb(180, 180, 180)
             };
-            nameLabel.SetBounds(0, 60, 120, 20);
+            nameLabel.SetBounds(0, 75, 120, 20);
 
             // 成仏回数（未成仏なら「未成仏」と表示）
             var countLabel = new Label
@@ -106,7 +107,7 @@ namespace namamonotti2
                 TextAlign = ContentAlignment.MiddleCenter,
                 ForeColor = unlocked ? Color.FromArgb(63, 158, 126) : Color.FromArgb(177, 138, 150)
             };
-            countLabel.SetBounds(0, 85, 120, 20);
+            countLabel.SetBounds(0, 100, 120, 20);
 
             // 最後に成仏させた日付（未成仏なら空欄）
             var dateLabel = new Label
@@ -116,10 +117,15 @@ namespace namamonotti2
                 TextAlign = ContentAlignment.MiddleCenter,
                 ForeColor = Color.FromArgb(177, 138, 150)
             };
-            dateLabel.SetBounds(0, 110, 120, 20);
+            dateLabel.SetBounds(0, 125, 120, 20);
 
             card.Controls.AddRange([emojiLabel, nameLabel, countLabel, dateLabel]);
             return card;
+        }
+
+        private void contentArea_Paint(object sender, PaintEventArgs e)
+        {
+
         }
     }
 }
