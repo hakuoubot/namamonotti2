@@ -13,6 +13,8 @@ namespace namamonotti2
     // 食材1件ぶんの表示用データ。DB連携ができたら StockItem から組み立てて渡す想定。
     public record StockCardData(string Name, string CategoryEmoji, string CategoryName, CharacterState State, int DaysLeft);
 
+    // 食材の状態（賞味期限までの残り日数で決まる）
+    // Fresh=元気, Warning=心配, Danger=危険, Zombie=期限切れ
     public enum CharacterState { Fresh, Warning, Danger, Zombie }
 
     public partial class home : UserControl
@@ -24,25 +26,32 @@ namespace namamonotti2
             InitializeComponent();
         }
 
+        // MainForm(シェル)から生成されるときに呼ばれるコンストラクタ。
+        // 画面が表示された(Load)タイミングでカード一覧を作る。
         public home(MainForm main) : this()
         {
             _main = main;
             Load += (s, e) => LoadCards();
         }
 
+        // ホーム画面のメイン処理：在庫食材をキャラカードとして並べる
         void LoadCards()
         {
             // DB接続は未実装（データ層チームの完成待ち）。仮データで見た目だけ確認する。
             var items = GetMockStockItems();
 
+            // 前回表示分をクリアしてから作り直す
             contentArea.Controls.Clear();
 
+            // 食材が1件もない場合は案内文だけ出して終了
             if (items.Count == 0)
             {
                 contentArea.Controls.Add(MakeHint("まだ食材が登録されていません。「とうろく」から追加してね！"));
                 return;
             }
 
+            // 状態によって「危険・ゾンビ（急いで使うべき）」と「元気・心配（まだ余裕あり）」の
+            // 2グループに分けて、危険なものを上に表示する
             var urgent = items.Where(i => i.State is CharacterState.Danger or CharacterState.Zombie).ToList();
             var normal = items.Where(i => i.State is CharacterState.Fresh or CharacterState.Warning).ToList();
 
@@ -58,6 +67,7 @@ namespace namamonotti2
             }
         }
 
+        // 動作確認用の仮データ（DB接続ができたら本物の在庫データに差し替える）
         static List<StockCardData> GetMockStockItems() =>
         [
             new("鶏むね肉", "🍗", "肉", CharacterState.Danger, 0),
@@ -67,6 +77,7 @@ namespace namamonotti2
             new("たまご", "🥚", "卵", CharacterState.Fresh, 10),
         ];
 
+        // 食材カードを横並び・折り返しで並べる入れ物を作る
         FlowLayoutPanel MakeCharGrid(List<StockCardData> items)
         {
             var grid = new FlowLayoutPanel
@@ -81,6 +92,8 @@ namespace namamonotti2
             return grid;
         }
 
+        // 食材1件ぶんのカードを組み立てる
+        // 状態(State)に応じて、背景色・バッジの色と文字・残り日数の表示を切り替える
         Panel MakeCharCard(StockCardData item)
         {
             var (bg, badgeColor, badgeText, days) = item.State switch
@@ -91,6 +104,7 @@ namespace namamonotti2
                 _ => (Color.FromArgb(255, 243, 214), Color.FromArgb(127, 212, 184), "元気", $"残{item.DaysLeft}日")
             };
 
+            // カード本体（角丸っぽく見せるため、枠線は自前で描画している）
             var card = new Panel { Width = 130, Height = 140, BackColor = bg, Margin = new Padding(6), Cursor = Cursors.Hand };
             card.Paint += (s, e) =>
             {
@@ -98,16 +112,20 @@ namespace namamonotti2
                 e.Graphics.DrawRectangle(pen, 1, 1, card.Width - 3, card.Height - 3);
             };
 
+            // カードの中身：絵文字・商品名・残り日数・状態バッジの4パーツ
             var emoji = new Label { Text = item.CategoryEmoji, Font = new Font("Segoe UI Emoji", 28F), TextAlign = ContentAlignment.MiddleCenter, Width = 130, Height = 55, Top = 10, Left = 0 };
             var name = new Label { Text = item.Name, Font = new Font("Yu Gothic UI", 9F, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, Width = 130, Height = 22, Top = 65, Left = 0, ForeColor = Color.FromArgb(107, 74, 85) };
             var daysLabel = new Label { Text = days, Font = new Font("Yu Gothic UI", 9F), TextAlign = ContentAlignment.MiddleCenter, Width = 130, Height = 18, Top = 85, Left = 0, ForeColor = badgeColor };
             var badge = new Label { Text = badgeText, Font = new Font("Yu Gothic UI", 8F, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, Width = 70, Height = 20, Top = 108, Left = 30, BackColor = badgeColor, ForeColor = Color.White };
 
             card.Controls.AddRange([emoji, name, daysLabel, badge]);
+
+            // カードをクリックすると「ざいこ」画面に飛ぶ
             card.Click += (s, e) => _main?.NavigateTo("stock");
             return card;
         }
 
+        // 「⚠️早く使ってあげて」のような見出しラベルを作る共通処理
         static Label MakeGroupLabel(string text) => new()
         {
             Text = text,
@@ -117,6 +135,7 @@ namespace namamonotti2
             Margin = new Padding(2, 12, 2, 4)
         };
 
+        // 在庫が0件のときに出す案内文を作る共通処理
         static Label MakeHint(string text) => new()
         {
             Text = text,
@@ -126,6 +145,7 @@ namespace namamonotti2
             Margin = new Padding(2, 6, 2, 6)
         };
 
+        // 下部の「この食材で料理を提案する」ボタン：押すと「りょうり」画面（recipi）に遷移
         void proposeBtn_Click(object sender, EventArgs e)
         {
             _main?.NavigateTo("recipe");

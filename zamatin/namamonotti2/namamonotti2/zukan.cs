@@ -10,6 +10,8 @@ using System.Windows.Forms;
 
 namespace namamonotti2
 {
+    // 図鑑カード1件ぶんのデータ。DB連携ができたらCollection/Categoryから組み立てて渡す想定。
+    // Unlocked=そのカテゴリを1回でも「成仏」させたことがあるか
     public record DexCategoryData(string Emoji, string Name, bool Unlocked, int Count, string LastDate);
 
     public partial class zukan : UserControl
@@ -21,24 +23,30 @@ namespace namamonotti2
             InitializeComponent();
         }
 
+        // MainForm(シェル)から生成されるときに呼ばれるコンストラクタ
         public zukan(MainForm main) : this()
         {
             _main = main;
         }
 
+        // 画面表示時のメイン処理：カテゴリごとの収集カードを並べる
         private void zukan_Load(object sender, EventArgs e)
         {
             // DB接続は未実装（データ層チームの完成待ち）。仮データで見た目だけ確認する。
             var categories = GetMockCategories();
-            int unlockedCount = categories.Count(c => c.Unlocked);
 
+            // 「成仏済み」のカテゴリ数を数えて、上部の集計表示に使う
+            int unlockedCount = categories.Count(c => c.Unlocked);
             statusLabel.Text = $"コレクション {unlockedCount}/{categories.Count} ／ 救済率 82%";
 
+            // 前回表示分をクリアしてから、カテゴリ1つにつき1枚カードを作って並べる
             contentArea.Controls.Clear();
             foreach (var cat in categories)
                 contentArea.Controls.Add(MakeDexCard(cat));
         }
 
+        // 動作確認用の仮データ（DB接続ができたら本物のCollectionデータに差し替える）
+        // 肉・魚・野菜は成仏済み、乳製品・卵・その他はまだ未成仏、という想定
         static List<DexCategoryData> GetMockCategories() =>
         [
             new("🍗", "肉", true, 12, "07/01"),
@@ -49,10 +57,14 @@ namespace namamonotti2
             new("🍱", "その他", false, 0, ""),
         ];
 
+        // カテゴリ1件ぶんのカードを組み立てる
+        // 成仏済み(unlocked)かどうかで、色・絵文字・表示文言を切り替える
+        // 未成仏の場合：絵文字→「？」、名前・回数の文字色→グレー、回数→「未成仏」
         Panel MakeDexCard(DexCategoryData cat)
         {
             bool unlocked = cat.Unlocked;
 
+            // カード本体（成仏済みはクリーム色、未成仏はグレーの背景）
             var card = new Panel
             {
                 Width = 120,
@@ -66,6 +78,7 @@ namespace namamonotti2
                 e.Graphics.DrawRectangle(pen, 1, 1, card.Width - 3, card.Height - 3);
             };
 
+            // 絵文字：未成仏なら「？」で隠す（まだ見たことがないキャラという演出）
             var emojiLabel = new Label
             {
                 Text = unlocked ? cat.Emoji : "？",
@@ -75,6 +88,7 @@ namespace namamonotti2
             };
             emojiLabel.SetBounds(0, 10, 120, 40);
 
+            // カテゴリ名（肉・魚・野菜など）
             var nameLabel = new Label
             {
                 Text = cat.Name,
@@ -84,6 +98,7 @@ namespace namamonotti2
             };
             nameLabel.SetBounds(0, 60, 120, 20);
 
+            // 成仏回数（未成仏なら「未成仏」と表示）
             var countLabel = new Label
             {
                 Text = unlocked ? $"×{cat.Count}" : "未成仏",
@@ -93,6 +108,7 @@ namespace namamonotti2
             };
             countLabel.SetBounds(0, 85, 120, 20);
 
+            // 最後に成仏させた日付（未成仏なら空欄）
             var dateLabel = new Label
             {
                 Text = unlocked ? cat.LastDate : "",
