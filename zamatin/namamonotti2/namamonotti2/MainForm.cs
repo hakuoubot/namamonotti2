@@ -41,7 +41,7 @@ namespace namamonotti2
             {
                 "home" => new home(this),
                 "add" => new touroku(this),
-                "stock" => new zaiko(this),
+                //"zaiko"  => new zaiko(this),// もしくは new zaiko(なんらかの文字);
                 "recipe" => new recipi(this),
                 "dex" => new zukan(this),
                 _ => new home(this)

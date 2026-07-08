@@ -28,12 +28,45 @@ namespace namamonotti2
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Name = "zaiko";
-            this.Size = new System.Drawing.Size(880, 560);
+            hintLabel1 = new Label();
+            contentArea = new FlowLayoutPanel();
+            SuspendLayout();
+            // 
+            // hintLabel1
+            // 
+            hintLabel1.AutoSize = true;
+            hintLabel1.Dock = DockStyle.Top;
+            hintLabel1.Location = new Point(0, 0);
+            hintLabel1.Name = "hintLabel1";
+            hintLabel1.Size = new Size(410, 25);
+            hintLabel1.TabIndex = 0;
+            hintLabel1.Text = "「並び: 残日数がい近い順（危険・ゾンビが上）を表示」";
+            // 
+            // contentArea
+            // 
+            contentArea.AutoScroll = true;
+            contentArea.Dock = DockStyle.Fill;
+            contentArea.FlowDirection = FlowDirection.TopDown;
+            contentArea.Location = new Point(0, 25);
+            contentArea.Name = "contentArea";
+            contentArea.Size = new Size(858, 479);
+            contentArea.TabIndex = 1;
+            // 
+            // zaiko
+            // 
+            AutoScaleDimensions = new SizeF(10F, 25F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(858, 504);
+            Controls.Add(contentArea);
+            Controls.Add(hintLabel1);
+            Name = "zaiko";
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
+
+        private Label hintLabel1;
+        private FlowLayoutPanel contentArea;
     }
 }
