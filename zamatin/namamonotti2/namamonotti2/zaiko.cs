@@ -1,16 +1,24 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
 namespace namamonotti2
 {
-    public partial class zaiko : Form
+    public partial class zaiko : UserControl
     {
+        readonly MainForm? _main;
+
         public zaiko()
         {
             InitializeComponent();
             LoadTestIngredients(); // 画面が開いたときにデータを読み込む
+        }
+
+        // MainForm(シェル)から生成されるときに呼ばれるコンストラクタ
+        public zaiko(MainForm main) : this()
+        {
+            _main = main;
         }
 
         // テスト用のなまものっちデータを生成して画面に並べる
@@ -32,7 +40,7 @@ namespace namamonotti2
                 rowPanel.Size = new Size(850, 60); // 横幅800、高さ60
                 rowPanel.BackColor = Color.White;  // 背景は白
                 rowPanel.Margin = new Padding(10, 5, 10, 5); // 上下に少し隙間をあける
-                
+
 
                 // 🎨 絵文字ラベル
                 Label iconLabel = new Label();

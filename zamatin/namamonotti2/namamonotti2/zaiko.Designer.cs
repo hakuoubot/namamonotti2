@@ -31,19 +31,19 @@ namespace namamonotti2
             hintLabel1 = new Label();
             contentArea = new FlowLayoutPanel();
             SuspendLayout();
-            // 
+            //
             // hintLabel1
-            // 
+            //
             hintLabel1.AutoSize = true;
             hintLabel1.Dock = DockStyle.Top;
             hintLabel1.Location = new Point(0, 0);
             hintLabel1.Name = "hintLabel1";
             hintLabel1.Size = new Size(410, 25);
             hintLabel1.TabIndex = 0;
-            hintLabel1.Text = "u•À‚Ñ: c“ú”‚ª‚¢‹ß‚¢‡iŠëŒ¯Eƒ]ƒ“ƒr‚ªãj‚ğ•\¦v";
-            // 
+            hintLabel1.Text = "ä¸¦ã³: æ®‹æ—¥æ•°ãŒè¿‘ã„é †ï¼ˆå±é™ºãƒ»ã‚¾ãƒ³ãƒ“ãŒä¸Šï¼‰";
+            //
             // contentArea
-            // 
+            //
             contentArea.AutoScroll = true;
             contentArea.Dock = DockStyle.Fill;
             contentArea.FlowDirection = FlowDirection.TopDown;
@@ -51,15 +51,15 @@ namespace namamonotti2
             contentArea.Name = "contentArea";
             contentArea.Size = new Size(858, 479);
             contentArea.TabIndex = 1;
-            // 
+            //
             // zaiko
-            // 
+            //
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(858, 504);
             Controls.Add(contentArea);
             Controls.Add(hintLabel1);
             Name = "zaiko";
+            Size = new Size(880, 560);
             ResumeLayout(false);
             PerformLayout();
         }
