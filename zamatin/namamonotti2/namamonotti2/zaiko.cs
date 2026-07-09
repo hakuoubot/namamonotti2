@@ -53,7 +53,7 @@ namespace namamonotti2
                 Label nameLabel = new Label();
                 nameLabel.Text = item.Item2;
                 nameLabel.Font = new Font("Yu Gothic UI", 12, FontStyle.Bold);
-                nameLabel.Location = new Point(60, 18);
+                nameLabel.Location = new Point(80, 18);
                 nameLabel.AutoSize = true;
 
                 // ⏳ 状態バッジ風のラベル
@@ -87,6 +87,11 @@ namespace namamonotti2
                 // 最後に、デザイナーで作った「contentArea」に行を追加！
                 contentArea.Controls.Add(rowPanel);
             }
+        }
+
+        private void contentArea_Paint(object sender, PaintEventArgs e)
+        {
+
         }
     }
 }

@@ -28,12 +28,51 @@ namespace namamonotti2
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Name = "recipi";
-            this.Size = new System.Drawing.Size(880, 560);
+            statusLabel = new Label();
+            contentArea = new FlowLayoutPanel();
+            SuspendLayout();
+            //
+            // statusLabel
+            //
+            statusLabel.AutoSize = true;
+            statusLabel.Dock = DockStyle.Top;
+            statusLabel.Font = new Font("Yu Gothic UI", 11F);
+            statusLabel.ForeColor = Color.FromArgb(177, 138, 150);
+            statusLabel.Location = new Point(0, 0);
+            statusLabel.Name = "statusLabel";
+            statusLabel.Padding = new Padding(4, 12, 4, 4);
+            statusLabel.Size = new Size(200, 37);
+            statusLabel.TabIndex = 0;
+            statusLabel.Text = "在庫から作れる料理（期限が近い食材を優先）";
+            //
+            // contentArea
+            //
+            contentArea.AutoScroll = true;
+            contentArea.Dock = DockStyle.Fill;
+            contentArea.FlowDirection = FlowDirection.TopDown;
+            contentArea.Location = new Point(0, 37);
+            contentArea.Name = "contentArea";
+            contentArea.Padding = new Padding(4);
+            contentArea.Size = new Size(880, 523);
+            contentArea.TabIndex = 1;
+            contentArea.WrapContents = false;
+            //
+            // recipi
+            //
+            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.FromArgb(255, 245, 248);
+            Controls.Add(contentArea);
+            Controls.Add(statusLabel);
+            Name = "recipi";
+            Size = new Size(880, 560);
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
+
+        private Label statusLabel;
+        private FlowLayoutPanel contentArea;
     }
 }
