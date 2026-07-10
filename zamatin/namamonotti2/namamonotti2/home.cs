@@ -112,13 +112,25 @@ namespace namamonotti2
                 e.Graphics.DrawRectangle(pen, 1, 1, card.Width - 3, card.Height - 3);
             };
 
-            // カードの中身：絵文字・商品名・残り日数・状態バッジの4パーツ
-            var emoji = new Label { Text = item.CategoryEmoji, Font = new Font("Segoe UI Emoji", 28F), TextAlign = ContentAlignment.MiddleCenter, Width = 130, Height = 55, Top = 10, Left = 0 };
+            // カードの中身：ドット絵キャラ・商品名・残り日数・状態バッジの4パーツ
+            // 絵文字だった部分を、自作のドット絵キャラ画像に置き換え（1マス1px＝64px四方）
+            // カテゴリごとに3パターンある中から、表示のたびにランダムで1つ選ぶ
+            var charBmp = PixelArt.Render(PixelArt.GetRandomPattern(item.CategoryName), 1, Color.Black, Color.White);
+            var charImage = new PictureBox
+            {
+                Image = charBmp,
+                SizeMode = PictureBoxSizeMode.CenterImage,
+                Width = 130,
+                Height = 55,
+                Top = 8,
+                Left = 0,
+                BackColor = Color.Transparent
+            };
             var name = new Label { Text = item.Name, Font = new Font("Yu Gothic UI", 9F, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, Width = 130, Height = 22, Top = 65, Left = 0, ForeColor = Color.FromArgb(107, 74, 85) };
             var daysLabel = new Label { Text = days, Font = new Font("Yu Gothic UI", 9F), TextAlign = ContentAlignment.MiddleCenter, Width = 130, Height = 18, Top = 85, Left = 0, ForeColor = badgeColor };
             var badge = new Label { Text = badgeText, Font = new Font("Yu Gothic UI", 8F, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, Width = 70, Height = 20, Top = 108, Left = 30, BackColor = badgeColor, ForeColor = Color.White };
 
-            card.Controls.AddRange([emoji, name, daysLabel, badge]);
+            card.Controls.AddRange([charImage, name, daysLabel, badge]);
 
             // カードをクリックすると「ざいこ」画面に飛ぶ
             card.Click += (s, e) => _main?.NavigateTo("stock");
