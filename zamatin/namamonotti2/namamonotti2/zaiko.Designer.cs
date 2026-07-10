@@ -51,7 +51,6 @@ namespace namamonotti2
             contentArea.Name = "contentArea";
             contentArea.Size = new Size(880, 535);
             contentArea.TabIndex = 1;
-            contentArea.Paint += contentArea_Paint;
             // 
             // zaiko
             // 

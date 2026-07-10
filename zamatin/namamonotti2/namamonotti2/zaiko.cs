@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using Microsoft.Data.SqlClient;
+using System.Configuration;
 
 namespace namamonotti2
 {
@@ -12,7 +14,7 @@ namespace namamonotti2
         public zaiko()
         {
             InitializeComponent();
-            LoadTestIngredients(); // 画面が開いたときにデータを読み込む
+            LoadIngredients(); // 画面が開いたときにDB(food_Table)からデータを読み込む
         }
 
         // MainForm(シェル)から生成されるときに呼ばれるコンストラクタ
@@ -21,77 +23,119 @@ namespace namamonotti2
             _main = main;
         }
 
-        // テスト用のなまものっちデータを生成して画面に並べる
-        private void LoadTestIngredients()
+        // カテゴリ名(GENRU)に対応する絵文字を割り当てる
+        static string EmojiFor(string category) => category switch
         {
-            // 1. 本来はデータベースから取るデータを、仮で3つ用意
-            var testData = new List<Tuple<string, string, string, Color>>()
+            "肉" => "🥩",
+            "魚" => "🐟",
+            "野菜" => "🥬",
+            "乳製品" => "🥛",
+            "卵" => "🥚",
+            _ => "🍱",
+        };
+
+        // 残り日数から「状態バッジ」の文言と色を判定（他の画面と同じ基準）
+        static (Color, string) StateFor(int daysLeft) => daysLeft switch
+        {
+            < 0 => (Color.LightGreen, $"{daysLeft}日（ゾンビ）"),
+            <= 1 => (Color.LightPink, $"残り{daysLeft}日（危険）"),
+            <= 3 => (Color.LightYellow, $"残り{daysLeft}日（心配）"),
+            _ => (Color.LightGreen, $"残り{daysLeft}日（元気）"),
+        };
+
+        // DB(food_Table)から在庫食材を取得して、期限が近い順に画面へ並べる
+        private void LoadIngredients()
+        {
+            contentArea.Controls.Clear();
+
+            try
             {
-                Tuple.Create("🐟", "魚くん", "残り0日（危険）", Color.LightPink),
-                Tuple.Create("🥩", "肉くん", "残り2日（心配）", Color.LightYellow),
-                Tuple.Create("🥬", "野菜ちゃん", "残り8日（元気）", Color.LightGreen)
-            };
+                using var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["wiz"].ConnectionString);
+                using var cmd = new SqlCommand(
+                    "SELECT FOODNAME, DATELANE, GENRU, FOODCOUNT, UNIT FROM dbo.food_Table ORDER BY DATELANE ASC",
+                    conn);
 
-            // 2. データの数だけ、1行ずつ「Panel（横長の枠）」を作って流し込む
-            foreach (var item in testData)
+                conn.Open();
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    string name = reader["FOODNAME"].ToString() ?? "";
+                    DateTime expiry = Convert.ToDateTime(reader["DATELANE"]);
+                    string category = reader["GENRU"].ToString() ?? "その他";
+                    string count = reader["FOODCOUNT"].ToString() ?? "";
+                    string unit = reader["UNIT"].ToString() ?? "";
+
+                    int daysLeft = (expiry.Date - DateTime.Today).Days;
+                    var (badgeColor, statusText) = StateFor(daysLeft);
+
+                    contentArea.Controls.Add(MakeRow(EmojiFor(category), $"{name}（{count}{unit}）", statusText, badgeColor));
+                }
+            }
+            catch (Exception ex)
             {
-                // 横長の行（Panel）を作成
-                Panel rowPanel = new Panel();
-                rowPanel.Size = new Size(850, 60); // 横幅800、高さ60
-                rowPanel.BackColor = Color.White;  // 背景は白
-                rowPanel.Margin = new Padding(10, 5, 10, 5); // 上下に少し隙間をあける
-
-
-                // 🎨 絵文字ラベル
-                Label iconLabel = new Label();
-                iconLabel.Text = item.Item1;
-                iconLabel.Font = new Font("Segoe UI Emoji", 18);
-                iconLabel.Location = new Point(10, 15);
-                iconLabel.AutoSize = true;
-
-                // 🏷️ 名前ラベル
-                Label nameLabel = new Label();
-                nameLabel.Text = item.Item2;
-                nameLabel.Font = new Font("Yu Gothic UI", 12, FontStyle.Bold);
-                nameLabel.Location = new Point(80, 18);
-                nameLabel.AutoSize = true;
-
-                // ⏳ 状態バッジ風のラベル
-                Label statusLabel = new Label();
-                statusLabel.Text = item.Item3;
-                statusLabel.Font = new Font("Yu Gothic UI", 10);
-                statusLabel.BackColor = item.Item4; // 状態に合わせた色
-                statusLabel.Location = new Point(200, 18);
-                statusLabel.AutoSize = true;
-                statusLabel.Padding = new Padding(5);
-
-                // 🛠️ [編集] ボタン
-                Button editButton = new Button();
-                editButton.Text = "編集";
-                editButton.Location = new Point(500, 15);
-                editButton.Size = new Size(75, 30);
-
-                // 🗑️ [廃棄] ボタン
-                Button deleteButton = new Button();
-                deleteButton.Text = "廃棄";
-                deleteButton.Location = new Point(590, 15);
-                deleteButton.Size = new Size(75, 30);
-
-                // 行（Panel）にパーツを全部詰め込む
-                rowPanel.Controls.Add(iconLabel);
-                rowPanel.Controls.Add(nameLabel);
-                rowPanel.Controls.Add(statusLabel);
-                rowPanel.Controls.Add(editButton);
-                rowPanel.Controls.Add(deleteButton);
-
-                // 最後に、デザイナーで作った「contentArea」に行を追加！
-                contentArea.Controls.Add(rowPanel);
+                // DB接続に失敗した場合（自分のPCにSQL Serverが無い等）はエラー内容を画面に出す
+                var errLabel = new Label
+                {
+                    Text = $"DB接続エラー: {ex.Message}",
+                    Font = new Font("Yu Gothic UI", 9F),
+                    ForeColor = Color.Red,
+                    AutoSize = true,
+                    Margin = new Padding(10)
+                };
+                contentArea.Controls.Add(errLabel);
             }
         }
 
-        private void contentArea_Paint(object sender, PaintEventArgs e)
+        // 1件ぶんの行（Panel）を組み立てる
+        Panel MakeRow(string emoji, string name, string statusText, Color statusColor)
         {
+            Panel rowPanel = new Panel();
+            rowPanel.Size = new Size(850, 60);
+            rowPanel.BackColor = Color.White;
+            rowPanel.Margin = new Padding(10, 5, 10, 5);
 
+            // 🎨 絵文字ラベル
+            Label iconLabel = new Label();
+            iconLabel.Text = emoji;
+            iconLabel.Font = new Font("Segoe UI Emoji", 18);
+            iconLabel.Location = new Point(10, 15);
+            iconLabel.AutoSize = true;
+
+            // 🏷️ 名前ラベル
+            Label nameLabel = new Label();
+            nameLabel.Text = name;
+            nameLabel.Font = new Font("Yu Gothic UI", 12, FontStyle.Bold);
+            nameLabel.Location = new Point(80, 18);
+            nameLabel.AutoSize = true;
+
+            // ⏳ 状態バッジ風のラベル
+            Label statusLabel = new Label();
+            statusLabel.Text = statusText;
+            statusLabel.Font = new Font("Yu Gothic UI", 10);
+            statusLabel.BackColor = statusColor;
+            statusLabel.Location = new Point(280, 18);
+            statusLabel.AutoSize = true;
+            statusLabel.Padding = new Padding(5);
+
+            // 🛠️ [編集] ボタン（今回は表示のみ。DB更新は未実装）
+            Button editButton = new Button();
+            editButton.Text = "編集";
+            editButton.Location = new Point(600, 15);
+            editButton.Size = new Size(75, 30);
+
+            // 🗑️ [廃棄] ボタン（今回は表示のみ。DB削除は未実装）
+            Button deleteButton = new Button();
+            deleteButton.Text = "廃棄";
+            deleteButton.Location = new Point(690, 15);
+            deleteButton.Size = new Size(75, 30);
+
+            rowPanel.Controls.Add(iconLabel);
+            rowPanel.Controls.Add(nameLabel);
+            rowPanel.Controls.Add(statusLabel);
+            rowPanel.Controls.Add(editButton);
+            rowPanel.Controls.Add(deleteButton);
+
+            return rowPanel;
         }
     }
 }
