@@ -74,31 +74,40 @@ namespace namamonotti2
                 Margin = new Padding(10)
             };
 
-            // カードの描画処理（枠線と、カラー絵文字を直接ここに描きます）
-            // カードの描画処理（枠線と、カラー絵文字を直接ここに描きます）
+            // カードの描画処理（枠線と、未成仏時の「？」マークをここに描きます）
             card.Paint += (s, e) =>
             {
-                // ① 枠線を描く（元からのコード）
+                // 枠線を描く
                 using var pen = new Pen(Color.FromArgb(255, 208, 224), 2);
                 e.Graphics.DrawRectangle(pen, 1, 1, card.Width - 3, card.Height - 3);
 
-                // ★ここが超重要！カラー絵文字の色データを有効化する設定
-                e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-
-                // ② カラー絵文字を直接描画する
-                string emojiText = unlocked ? cat.Emoji : "？";
-                using var emojiFont = new Font("Segoe UI Emoji", 24F);
-                var sf = new StringFormat
+                // 未成仏の場合はドット絵の代わりに「？」を表示する
+                if (!unlocked)
                 {
-                    LineAlignment = StringAlignment.Center,
-                    Alignment = StringAlignment.Center
-                };
-                var emojiRect = new Rectangle(0, 12, 120, 52);
-
-                // カラー絵文字を描画するときは、Brushes.Black ではなく「SystemBrushes.WindowText」を使うか、
-                // Windowsの描画エンジン（TextRenderer）に任せると確実に色が出ます
-                TextRenderer.DrawText(e.Graphics, emojiText, emojiFont, emojiRect, Color. Black,TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                    e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                    using var markFont = new Font("Yu Gothic UI", 24F, FontStyle.Bold);
+                    var markRect = new Rectangle(0, 12, 120, 52);
+                    TextRenderer.DrawText(e.Graphics, "？", markFont, markRect, Color.FromArgb(180, 180, 180), TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                }
             };
+
+            // 成仏済みのカテゴリは、homeと同じドット絵キャラを表示する。
+            // homeと違い、ここは毎回同じ絵（パターン1固定）にする。
+            PictureBox? charImage = null;
+            if (unlocked)
+            {
+                var charBmp = PixelArt.Render(PixelArt.GetFirstPattern(cat.Name), 1, Color.Black, Color.White);
+                charImage = new PictureBox
+                {
+                    Image = charBmp,
+                    SizeMode = PictureBoxSizeMode.CenterImage,
+                    Width = 120,
+                    Height = 52,
+                    Top = 12,
+                    Left = 0,
+                    BackColor = Color.Transparent
+                };
+            }
 
             // カテゴリ名（肉・魚・野菜など）
             var nameLabel = new Label
@@ -130,8 +139,10 @@ namespace namamonotti2
             };
             dateLabel.SetBounds(0, 118, 120, 20);
 
-            // ラベルたちをカードに追加（emojiLabelは無いので除外しています）
+            // ラベルたちをカードに追加（未成仏時はドット絵キャラなし）
             card.Controls.AddRange([nameLabel, countLabel, dateLabel]);
+            if (charImage != null)
+                card.Controls.Add(charImage);
 
             return card;
         }
