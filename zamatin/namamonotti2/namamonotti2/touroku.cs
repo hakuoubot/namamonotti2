@@ -4,7 +4,9 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Data.SqlClient;
@@ -15,6 +17,9 @@ namespace namamonotti2
     public partial class touroku : UserControl
     {
         readonly MainForm? _main;
+
+        // Open Food Facts への問い合わせ用（アプリ全体で使い回す）
+        static readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(8) };
 
         public touroku()
         {
@@ -29,6 +34,68 @@ namespace namamonotti2
         public touroku(MainForm main) : this()
         {
             _main = main;
+        }
+
+        // 「📷 バーコードでスキャン」ボタンの処理：
+        // カメラでバーコードを読み取り → Open Food Facts APIで商品名を検索 → 商品名欄に自動入力
+        private async void photoScanBtn_Click(object sender, EventArgs e)
+        {
+            using var scanForm = new BarcodeScanForm();
+            if (scanForm.ShowDialog(FindForm()) != DialogResult.OK || string.IsNullOrWhiteSpace(scanForm.ScannedCode))
+                return;
+
+            string code = scanForm.ScannedCode;
+            photoScanBtn.Enabled = false;
+            photoScanBtn.Text = "🔍 商品を検索中...";
+
+            try
+            {
+                string? productName = await LookupBarcodeAsync(code);
+                if (productName != null)
+                {
+                    nameBox.Text = productName;
+                    nameBox.Focus();
+                }
+                else
+                {
+                    MessageBox.Show(
+                        $"バーコード「{code}」の商品が見つかりませんでした。商品名を手入力してください。",
+                        "商品が見つかりません", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    nameBox.Focus();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"商品検索に失敗しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                photoScanBtn.Enabled = true;
+                photoScanBtn.Text = "📷 バーコードでスキャン";
+            }
+        }
+
+        // Open Food Facts APIにJANコードを問い合わせて商品名を取得する（見つからなければnull）
+        static async Task<string?> LookupBarcodeAsync(string barcode)
+        {
+            string url = $"https://world.openfoodfacts.org/api/v2/product/{barcode}.json?fields=product_name,product_name_ja";
+            using var res = await _http.GetAsync(url);
+            if (!res.IsSuccessStatusCode) return null;
+
+            using var stream = await res.Content.ReadAsStreamAsync();
+            using var doc = await JsonDocument.ParseAsync(stream);
+            var root = doc.RootElement;
+
+            if (!root.TryGetProperty("status", out var status) || status.GetInt32() != 1)
+                return null;
+            if (!root.TryGetProperty("product", out var product))
+                return null;
+
+            string? nameJa = product.TryGetProperty("product_name_ja", out var ja) ? ja.GetString() : null;
+            string? name = product.TryGetProperty("product_name", out var en) ? en.GetString() : null;
+
+            string? result = !string.IsNullOrWhiteSpace(nameJa) ? nameJa : name;
+            return string.IsNullOrWhiteSpace(result) ? null : result;
         }
 
         // 「登録する」ボタンの処理：入力チェック → 確認メッセージ表示 → 入力欄をクリア
