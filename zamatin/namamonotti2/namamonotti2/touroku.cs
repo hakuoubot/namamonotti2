@@ -114,15 +114,62 @@ namespace namamonotti2
                 return;
             }
 
-            // DB接続は未実装（チームのデータ層決定待ち）。入力内容の確認のみ行う。
-            // ここで各入力欄の値を取り出しておく（DBが決まったら、この値をそのままStockItemに詰めて保存する想定）
+            // ここで各入力欄の値を取り出しておく（この後フォームをリセットするため、必ず先に確保する）
             string name = nameBox.Text.Trim();
             string category = categoryBox.SelectedItem?.ToString() ?? "";
             decimal qty = qtyBox.Value;
             string unit = unitBox.SelectedItem?.ToString() ?? "";
             DateTime expiry = datePicker.Value;
 
-            // 登録内容をポップアップで確認表示（本来はここでDB保存処理を呼ぶ）
+            try
+            {
+                using (SqlConnection conn = new SqlConnection
+                    (ConfigurationManager.ConnectionStrings["wiz"].ConnectionString))
+                using (SqlCommand cmd = new SqlCommand())
+                {
+                    cmd.Connection = conn;
+
+                    StringBuilder sql=new StringBuilder();
+                    sql.Append(" INSERT INTO");
+                    sql.Append("     dbo.food_Table ");
+                    sql.Append(" (");
+                    sql.Append("     FOODNAME");
+                    sql.Append("    , DATELANE");
+                    sql.Append("    , DATE");
+                    sql.Append("    , GENRU");
+                    sql.Append("    , FOODCOUNT");
+                    sql.Append("    , UNIT");
+                    sql.Append(" )");
+                    sql.Append("VALUES ");
+                    sql.Append(" (");
+                    sql.Append("     @FOODNAME");
+                    sql.Append("    ,@DATELANE");
+                    sql.Append("    ,GETDATE()");
+                    sql.Append("    ,@GENRU");
+                    sql.Append("    ,@FOODCOUNT");
+                    sql.Append("    ,@UNIT");
+                    sql.Append(" )");
+
+                    cmd.CommandText = sql.ToString();
+
+                    // 必ずリセット前に確保した変数を使う（入力欄を直接参照すると、この後のリセットで空になってしまう）
+                    cmd.Parameters.Add("@FOODNAME",SqlDbType.NVarChar).Value = name;
+                    cmd.Parameters.Add("@DATELANE",SqlDbType.Date).Value = expiry;
+                    cmd.Parameters.Add("@GENRU",SqlDbType.NVarChar).Value = category;
+                    cmd.Parameters.Add("@FOODCOUNT",SqlDbType.Int).Value = (int)qty;
+                    cmd.Parameters.Add("@UNIT",SqlDbType.NVarChar).Value = unit;
+
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"登録に失敗しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // 登録内容をポップアップで確認表示
             MessageBox.Show(
                 $"「{name}」（{category}）を {qty}{unit}、賞味期限 {expiry:yyyy-MM-dd} で登録しました！",
                 "登録完了", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -134,45 +181,6 @@ namespace namamonotti2
             unitBox.SelectedIndex = 0;
             datePicker.Value = DateTime.Today.AddDays(7);
             nameBox.Focus();
-
-            using (SqlConnection conn = new SqlConnection
-                (ConfigurationManager.ConnectionStrings["wiz"].ConnectionString))
-            using (SqlCommand cmd = new SqlCommand())
-            {
-                cmd.Connection = conn;
-
-                StringBuilder sql=new StringBuilder();
-                sql.Append(" INSERT INTO");
-                sql.Append("     dbo.food_Table ");
-                sql.Append(" (");
-                sql.Append("     FOODNAME");
-                sql.Append("    , DATELANE");
-                sql.Append("    , DATE");
-                sql.Append("    , GENRU");
-                sql.Append("    , FOODCOUNT");
-                sql.Append("    , UNIT");
-                sql.Append(" )");
-                sql.Append("VALUES ");
-                sql.Append(" (");
-                sql.Append("     @FOODNAME");
-                sql.Append("    ,@DATELANE");
-                sql.Append("    ,GETDATE()");
-                sql.Append("    ,@GENRU");
-                sql.Append("    ,@FOODCOUNT");
-                sql.Append("    ,@UNIT");
-                sql.Append(" )");
-
-                cmd.CommandText = sql.ToString();
-
-                cmd.Parameters.Add("@FOODNAME",SqlDbType.NVarChar).Value=nameBox.Text;
-                cmd.Parameters.Add("@DATELANE",SqlDbType.Date).Value=datePicker.Value;
-                cmd.Parameters.Add("@GENRU",SqlDbType.NVarChar).Value=categoryBox.Text;
-                cmd.Parameters.Add("@FOODCOUNT",SqlDbType.NVarChar).Value = qtyBox.Text;
-                cmd.Parameters.Add("@UNIT",SqlDbType.NVarChar).Value=unitBox.Text;
-
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
         }
     }
 }
