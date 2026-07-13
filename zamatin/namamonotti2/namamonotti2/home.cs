@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Configuration;
 using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Data.SqlClient;
 
 namespace namamonotti2
 {
@@ -37,11 +39,18 @@ namespace namamonotti2
         // ホーム画面のメイン処理：在庫食材をキャラカードとして並べる
         void LoadCards()
         {
-            // DB接続は未実装（データ層チームの完成待ち）。仮データで見た目だけ確認する。
-            var items = GetMockStockItems();
-
-            // 前回表示分をクリアしてから作り直す
             contentArea.Controls.Clear();
+
+            List<StockCardData> items;
+            try
+            {
+                items = GetStockItemsFromDb();
+            }
+            catch (Exception ex)
+            {
+                contentArea.Controls.Add(MakeHint($"DB接続エラー: {ex.Message}"));
+                return;
+            }
 
             // 食材が1件もない場合は案内文だけ出して終了
             if (items.Count == 0)
@@ -67,15 +76,47 @@ namespace namamonotti2
             }
         }
 
-        // 動作確認用の仮データ（DB接続ができたら本物の在庫データに差し替える）
-        static List<StockCardData> GetMockStockItems() =>
-        [
-            new("鶏むね肉", "🍗", "肉", CharacterState.Danger, 0),
-            new("さば", "🐟", "魚", CharacterState.Zombie, -1),
-            new("キャベツ", "🥬", "野菜", CharacterState.Warning, 2),
-            new("牛乳", "🥛", "乳製品", CharacterState.Fresh, 5),
-            new("たまご", "🥚", "卵", CharacterState.Fresh, 10),
-        ];
+        // DB(food_Table)から在庫食材を取得する
+        static List<StockCardData> GetStockItemsFromDb()
+        {
+            var items = new List<StockCardData>();
+
+            using var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["wiz"].ConnectionString);
+            using var cmd = new SqlCommand("SELECT FOODNAME, DATELANE, GENRU FROM dbo.food_Table ORDER BY DATELANE ASC", conn);
+
+            conn.Open();
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                string name = reader["FOODNAME"].ToString() ?? "";
+                DateTime expiry = Convert.ToDateTime(reader["DATELANE"]);
+                string category = reader["GENRU"].ToString() ?? "その他";
+                int daysLeft = (expiry.Date - DateTime.Today).Days;
+
+                items.Add(new StockCardData(name, EmojiFor(category), category, StateFor(daysLeft), daysLeft));
+            }
+            return items;
+        }
+
+        // カテゴリ名(GENRU)に対応する絵文字を割り当てる
+        static string EmojiFor(string category) => category switch
+        {
+            "肉" => "🥩",
+            "魚" => "🐟",
+            "野菜" => "🥬",
+            "乳製品" => "🥛",
+            "卵" => "🥚",
+            _ => "🍱",
+        };
+
+        // 残り日数から状態(State)を判定（zaikoの状態バッジと同じ基準）
+        static CharacterState StateFor(int daysLeft) => daysLeft switch
+        {
+            < 0 => CharacterState.Zombie,
+            <= 1 => CharacterState.Danger,
+            <= 3 => CharacterState.Warning,
+            _ => CharacterState.Fresh,
+        };
 
         // 食材カードを横並び・折り返しで並べる入れ物を作る
         FlowLayoutPanel MakeCharGrid(List<StockCardData> items)

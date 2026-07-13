@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
 using Microsoft.Data.SqlClient;
@@ -52,13 +53,14 @@ namespace namamonotti2
             {
                 using var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["wiz"].ConnectionString);
                 using var cmd = new SqlCommand(
-                    "SELECT FOODNAME, DATELANE, GENRU, FOODCOUNT, UNIT FROM dbo.food_Table ORDER BY DATELANE ASC",
+                    "SELECT ID, FOODNAME, DATELANE, GENRU, FOODCOUNT, UNIT FROM dbo.food_Table ORDER BY DATELANE ASC",
                     conn);
 
                 conn.Open();
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
+                    int id = Convert.ToInt32(reader["ID"]);
                     string name = reader["FOODNAME"].ToString() ?? "";
                     DateTime expiry = Convert.ToDateTime(reader["DATELANE"]);
                     string category = reader["GENRU"].ToString() ?? "その他";
@@ -68,7 +70,7 @@ namespace namamonotti2
                     int daysLeft = (expiry.Date - DateTime.Today).Days;
                     var (badgeColor, statusText) = StateFor(daysLeft);
 
-                    contentArea.Controls.Add(MakeRow(EmojiFor(category), $"{name}（{count}{unit}）", statusText, badgeColor));
+                    contentArea.Controls.Add(MakeRow(id, EmojiFor(category), $"{name}（{count}{unit}）", statusText, badgeColor));
                 }
             }
             catch (Exception ex)
@@ -86,8 +88,35 @@ namespace namamonotti2
             }
         }
 
+        // 「廃棄」ボタンの処理：確認のうえ、food_Tableから該当行を削除する
+        // （図鑑への登録はしない。図鑑登録の仕様は別途相談してから対応する）
+        private void DeleteIngredient(int id, string name)
+        {
+            var result = MessageBox.Show(
+                $"「{name}」を廃棄しますか？（在庫一覧から削除されます）",
+                "廃棄の確認", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (result != DialogResult.Yes) return;
+
+            try
+            {
+                using var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["wiz"].ConnectionString);
+                using var cmd = new SqlCommand("DELETE FROM dbo.food_Table WHERE ID = @ID", conn);
+                cmd.Parameters.Add("@ID", SqlDbType.Int).Value = id;
+
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"廃棄に失敗しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            LoadIngredients(); // 一覧を最新の状態に読み直す
+        }
+
         // 1件ぶんの行（Panel）を組み立てる
-        Panel MakeRow(string emoji, string name, string statusText, Color statusColor)
+        Panel MakeRow(int id, string emoji, string name, string statusText, Color statusColor)
         {
             Panel rowPanel = new Panel();
             rowPanel.Size = new Size(850, 60);
@@ -117,17 +146,18 @@ namespace namamonotti2
             statusLabel.AutoSize = true;
             statusLabel.Padding = new Padding(5);
 
-            // 🛠️ [編集] ボタン（今回は表示のみ。DB更新は未実装）
+            // 🛠️ [編集] ボタン（要相談のため、今回は表示のみ。DB更新は未実装）
             Button editButton = new Button();
             editButton.Text = "編集";
             editButton.Location = new Point(600, 15);
             editButton.Size = new Size(75, 30);
 
-            // 🗑️ [廃棄] ボタン（今回は表示のみ。DB削除は未実装）
+            // 🗑️ [廃棄] ボタン：確認のうえ、food_Tableから該当行を削除する（図鑑への登録は行わない）
             Button deleteButton = new Button();
             deleteButton.Text = "廃棄";
             deleteButton.Location = new Point(690, 15);
             deleteButton.Size = new Size(75, 30);
+            deleteButton.Click += (s, e) => DeleteIngredient(id, name);
 
             rowPanel.Controls.Add(iconLabel);
             rowPanel.Controls.Add(nameLabel);
