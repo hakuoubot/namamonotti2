@@ -1,22 +1,35 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Configuration;
 using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Data.SqlClient;
 
 namespace namamonotti2
 {
-    // 図鑑カード1件ぶんのデータ。DB連携ができたらCollection/Categoryから組み立てて渡す想定。
-    // Unlocked=そのカテゴリを1回でも「成仏」させたことがあるか
-    public record DexCategoryData(string Emoji, string Name, bool Unlocked, int Count, string LastDate);
+    // 図鑑カード1件ぶんのデータ。
+    // Unlocked=そのカテゴリを1回でも「成仏」させたことがあるか、Count=成仏させた回数
+    public record DexCategoryData(string Emoji, string Name, bool Unlocked, int Count);
 
     public partial class zukan : UserControl
     {
         readonly MainForm? _main;
+
+        // 図鑑に並べる固定の6カテゴリ（とうろく画面のカテゴリ一覧と揃えている）
+        static readonly (string Emoji, string Name)[] AllCategories =
+        [
+            ("🍗", "肉"),
+            ("🐟", "魚"),
+            ("🥬", "野菜"),
+            ("🥛", "乳製品"),
+            ("🥚", "卵"),
+            ("🍱", "その他"),
+        ];
 
         public zukan()
         {
@@ -32,30 +45,81 @@ namespace namamonotti2
         // 画面表示時のメイン処理：カテゴリごとの収集カードを並べる
         private void zukan_Load(object sender, EventArgs e)
         {
-            // DB接続は未実装（データ層チームの完成待ち）。仮データで見た目だけ確認する。
-            var categories = GetMockCategories();
-
-            // 「成仏済み」のカテゴリ数を数えて、上部の集計表示に使う
-            int unlockedCount = categories.Count(c => c.Unlocked);
-            statusLabel.Text = $"コレクション {unlockedCount}/{categories.Count} ／ 救済率 82%";
-
-            // 前回表示分をクリアしてから、カテゴリ1つにつき1枚カードを作って並べる
             contentArea.Controls.Clear();
+
+            List<DexCategoryData> categories;
+            int totalSeibutsu, totalHaiki;
+            try
+            {
+                (categories, totalSeibutsu, totalHaiki) = GetCategoriesFromDb();
+            }
+            catch (Exception ex)
+            {
+                statusLabel.Text = "";
+                contentArea.Controls.Add(new Label
+                {
+                    Text = $"DB接続エラー: {ex.Message}",
+                    Font = new Font("Yu Gothic UI", 9F),
+                    ForeColor = Color.Red,
+                    AutoSize = true,
+                    Margin = new Padding(10)
+                });
+                return;
+            }
+
+            // 「成仏済み」のカテゴリ数と、救済率（成仏÷(成仏+廃棄)）を上部の集計表示に使う
+            int unlockedCount = categories.Count(c => c.Unlocked);
+            int totalEvents = totalSeibutsu + totalHaiki;
+            string rescueText = totalEvents > 0
+                ? $" ／ 救済率 {(int)Math.Round(totalSeibutsu * 100.0 / totalEvents)}%"
+                : "";
+            statusLabel.Text = $"コレクション {unlockedCount}/{categories.Count}{rescueText}";
+
             foreach (var cat in categories)
                 contentArea.Controls.Add(MakeDexCard(cat));
         }
 
-        // 動作確認用の仮データ（DB接続ができたら本物のCollectionデータに差し替える）
-        // 肉・魚・野菜は成仏済み、乳製品・卵・その他はまだ未成仏、という想定
-        static List<DexCategoryData> GetMockCategories() =>
-        [
-            new("🍗", "肉", true, 12, "07/01"),
-            new("🐟", "魚", true, 7, "06/28"),
-            new("🥬", "野菜", true, 20, "07/02"),
-            new("🥛", "乳製品", false, 0, ""),
-            new("🥚", "卵", false, 0, ""),
-            new("🍱", "その他", false, 0, ""),
-        ];
+        // DB(food_Table)からカテゴリごとの成仏数・廃棄数を集計する
+        // SITUATION='成仏' → 図鑑にカウント、SITUATION='廃棄' → 救済率の分母にのみ使う
+        static (List<DexCategoryData> categories, int totalSeibutsu, int totalHaiki) GetCategoriesFromDb()
+        {
+            var seibutsuCounts = new Dictionary<string, int>();
+            int totalSeibutsu = 0, totalHaiki = 0;
+
+            using var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["wiz"].ConnectionString);
+            using var cmd = new SqlCommand(
+                "SELECT GENRU, SITUATION, COUNT(*) AS Cnt FROM dbo.food_Table WHERE SITUATION IS NOT NULL GROUP BY GENRU, SITUATION",
+                conn);
+
+            conn.Open();
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                string category = reader["GENRU"].ToString() ?? "";
+                string situation = reader["SITUATION"].ToString() ?? "";
+                int cnt = Convert.ToInt32(reader["Cnt"]);
+
+                if (situation == "成仏")
+                {
+                    seibutsuCounts[category] = seibutsuCounts.GetValueOrDefault(category) + cnt;
+                    totalSeibutsu += cnt;
+                }
+                else if (situation == "廃棄")
+                {
+                    totalHaiki += cnt;
+                }
+            }
+
+            var categories = AllCategories
+                .Select(c =>
+                {
+                    int count = seibutsuCounts.GetValueOrDefault(c.Name);
+                    return new DexCategoryData(c.Emoji, c.Name, count > 0, count);
+                })
+                .ToList();
+
+            return (categories, totalSeibutsu, totalHaiki);
+        }
 
         // カテゴリ1件ぶんのカードを組み立てる
         // 成仏済み(unlocked)かどうかで、色・絵文字・表示文言を切り替える
@@ -69,7 +133,7 @@ namespace namamonotti2
             var card = new Panel
             {
                 Width = 120,
-                Height = 150,
+                Height = 125,
                 BackColor = unlocked ? Color.FromArgb(255, 243, 214) : Color.FromArgb(230, 230, 230),
                 Margin = new Padding(10)
             };
@@ -129,18 +193,8 @@ namespace namamonotti2
             };
             countLabel.SetBounds(0, 93, 120, 20);
 
-            // 最後に成仏させた日付（未成仏なら空欄）
-            var dateLabel = new Label
-            {
-                Text = unlocked ? cat.LastDate : "",
-                Font = new Font("Yu Gothic UI", 8F),
-                TextAlign = ContentAlignment.MiddleCenter,
-                ForeColor = Color.FromArgb(177, 138, 150)
-            };
-            dateLabel.SetBounds(0, 118, 120, 20);
-
             // ラベルたちをカードに追加（未成仏時はドット絵キャラなし）
-            card.Controls.AddRange([nameLabel, countLabel, dateLabel]);
+            card.Controls.AddRange([nameLabel, countLabel]);
             if (charImage != null)
                 card.Controls.Add(charImage);
 
