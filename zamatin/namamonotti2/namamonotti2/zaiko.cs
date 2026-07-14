@@ -149,14 +149,14 @@ namespace namamonotti2
             // 🛠️ [編集] ボタン（要相談のため、今回は表示のみ。DB更新は未実装）
             Button editButton = new Button();
             editButton.Text = "編集";
-            editButton.Location = new Point(600, 15);
-            editButton.Size = new Size(75, 30);
+            editButton.Location = new Point(600, 10);
+            editButton.Size = new Size(75, 40);
 
             // 🗑️ [廃棄] ボタン：確認のうえ、food_Tableから該当行を削除する（図鑑への登録は行わない）
             Button deleteButton = new Button();
             deleteButton.Text = "廃棄";
-            deleteButton.Location = new Point(690, 15);
-            deleteButton.Size = new Size(75, 30);
+            deleteButton.Location = new Point(690, 10);
+            deleteButton.Size = new Size(75, 40);
             deleteButton.Click += (s, e) => DeleteIngredient(id, name);
 
             rowPanel.Controls.Add(iconLabel);
