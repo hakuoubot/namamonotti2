@@ -65,13 +65,13 @@ namespace namamonotti2
                     string name = reader["FOODNAME"].ToString() ?? "";
                     DateTime expiry = Convert.ToDateTime(reader["DATELANE"]);
                     string category = reader["GENRU"].ToString() ?? "その他";
-                    string count = reader["FOODCOUNT"].ToString() ?? "";
+                    decimal count = Convert.ToDecimal(reader["FOODCOUNT"]);
                     string unit = reader["UNIT"].ToString() ?? "";
 
                     int daysLeft = (expiry.Date - DateTime.Today).Days;
                     var (badgeColor, statusText) = StateFor(daysLeft);
 
-                    contentArea.Controls.Add(MakeRow(id, EmojiFor(category), $"{name}（{count}{unit}）", statusText, badgeColor));
+                    contentArea.Controls.Add(MakeRow(id, EmojiFor(category), name, category, count, unit, expiry, statusText, badgeColor));
                 }
             }
             catch (Exception ex)
@@ -87,6 +87,14 @@ namespace namamonotti2
                 };
                 contentArea.Controls.Add(errLabel);
             }
+        }
+
+        // 「編集」ボタンの処理：編集用ダイアログを開き、更新されたら一覧を読み直す
+        private void EditIngredient(int id, string name, string category, decimal count, string unit, DateTime expiry)
+        {
+            using var form = new EditItemForm(id, name, category, count, unit, expiry);
+            if (form.ShowDialog(FindForm()) == DialogResult.OK)
+                LoadIngredients();
         }
 
         // 「成仏」ボタンの処理：確認のうえ、food_TableのSITUATIONに記録して「使い切った」ことを残す
@@ -146,7 +154,7 @@ namespace namamonotti2
         }
 
         // 1件ぶんの行（Panel）を組み立てる
-        Panel MakeRow(int id, string emoji, string name, string statusText, Color statusColor)
+        Panel MakeRow(int id, string emoji, string name, string category, decimal count, string unit, DateTime expiry, string statusText, Color statusColor)
         {
             Panel rowPanel = new Panel();
             rowPanel.Size = new Size(850, 60);
@@ -162,7 +170,7 @@ namespace namamonotti2
 
             // 🏷️ 名前ラベル
             Label nameLabel = new Label();
-            nameLabel.Text = name;
+            nameLabel.Text = $"{name}（{count}{unit}）";
             nameLabel.Font = new Font("Yu Gothic UI", 12, FontStyle.Bold);
             nameLabel.Location = new Point(80, 18);
             nameLabel.AutoSize = true;
@@ -176,11 +184,12 @@ namespace namamonotti2
             statusLabel.AutoSize = true;
             statusLabel.Padding = new Padding(5);
 
-            // 🛠️ [編集] ボタン（要相談のため、今回は表示のみ。DB更新は未実装）
+            // 🛠️ [編集] ボタン：編集ダイアログを開いてfood_Tableを更新する
             Button editButton = new Button();
             editButton.Text = "編集";
             editButton.Location = new Point(510, 10);
             editButton.Size = new Size(75, 40);
+            editButton.Click += (s, e) => EditIngredient(id, name, category, count, unit, expiry);
 
             // 🙏 [成仏] ボタン：確認のうえ、SITUATIONに記録して使い切ったことを残す（図鑑にカウント）
             Button completeButton = new Button();
