@@ -52,8 +52,9 @@ namespace namamonotti2
             try
             {
                 using var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["wiz"].ConnectionString);
+                // SITUATIONが入っている行は「成仏」済み（図鑑にカウント済み）なので在庫一覧には出さない
                 using var cmd = new SqlCommand(
-                    "SELECT ID, FOODNAME, DATELANE, GENRU, FOODCOUNT, UNIT FROM dbo.food_Table ORDER BY DATELANE ASC",
+                    "SELECT ID, FOODNAME, DATELANE, GENRU, FOODCOUNT, UNIT FROM dbo.food_Table WHERE SITUATION IS NULL ORDER BY DATELANE ASC",
                     conn);
 
                 conn.Open();
@@ -88,19 +89,20 @@ namespace namamonotti2
             }
         }
 
-        // 「廃棄」ボタンの処理：確認のうえ、food_Tableから該当行を削除する
-        // （図鑑への登録はしない。図鑑登録の仕様は別途相談してから対応する）
-        private void DeleteIngredient(int id, string name)
+        // 「成仏」ボタンの処理：確認のうえ、food_TableのSITUATIONに記録して「使い切った」ことを残す
+        // （行は削除せず残す。図鑑側はSITUATIONが入っている行をカテゴリごとに集計してカウントする想定）
+        private void CompleteIngredient(int id, string name)
         {
             var result = MessageBox.Show(
-                $"「{name}」を廃棄しますか？（在庫一覧から削除されます）",
-                "廃棄の確認", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                $"「{name}」を成仏させますか？（図鑑にカウントされます）",
+                "成仏の確認", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result != DialogResult.Yes) return;
 
             try
             {
                 using var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["wiz"].ConnectionString);
-                using var cmd = new SqlCommand("DELETE FROM dbo.food_Table WHERE ID = @ID", conn);
+                using var cmd = new SqlCommand("UPDATE dbo.food_Table SET SITUATION = @SITUATION WHERE ID = @ID", conn);
+                cmd.Parameters.Add("@SITUATION", SqlDbType.VarChar).Value = "成仏";
                 cmd.Parameters.Add("@ID", SqlDbType.Int).Value = id;
 
                 conn.Open();
@@ -108,7 +110,35 @@ namespace namamonotti2
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"廃棄に失敗しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"成仏の記録に失敗しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            LoadIngredients(); // 一覧を最新の状態に読み直す
+        }
+
+        // 「削除」ボタンの処理：確認のうえ、food_TableのSITUATIONに「廃棄」と記録する（行は削除しない）
+        // （成仏とは違い在庫一覧からは消える。図鑑の「救済率」の分母としてはカウントされる）
+        private void DeleteIngredient(int id, string name)
+        {
+            var result = MessageBox.Show(
+                $"「{name}」を削除しますか？（在庫一覧から削除されます。成仏としてはカウントされません）",
+                "削除の確認", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (result != DialogResult.Yes) return;
+
+            try
+            {
+                using var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["wiz"].ConnectionString);
+                using var cmd = new SqlCommand("UPDATE dbo.food_Table SET SITUATION = @SITUATION WHERE ID = @ID", conn);
+                cmd.Parameters.Add("@SITUATION", SqlDbType.VarChar).Value = "廃棄";
+                cmd.Parameters.Add("@ID", SqlDbType.Int).Value = id;
+
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"削除に失敗しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -149,12 +179,19 @@ namespace namamonotti2
             // 🛠️ [編集] ボタン（要相談のため、今回は表示のみ。DB更新は未実装）
             Button editButton = new Button();
             editButton.Text = "編集";
-            editButton.Location = new Point(600, 10);
+            editButton.Location = new Point(510, 10);
             editButton.Size = new Size(75, 40);
 
-            // 🗑️ [廃棄] ボタン：確認のうえ、food_Tableから該当行を削除する（図鑑への登録は行わない）
+            // 🙏 [成仏] ボタン：確認のうえ、SITUATIONに記録して使い切ったことを残す（図鑑にカウント）
+            Button completeButton = new Button();
+            completeButton.Text = "成仏";
+            completeButton.Location = new Point(600, 10);
+            completeButton.Size = new Size(75, 40);
+            completeButton.Click += (s, e) => CompleteIngredient(id, name);
+
+            // 🗑️ [削除] ボタン：確認のうえ、food_Tableから該当行を完全に削除する（図鑑への登録は行わない）
             Button deleteButton = new Button();
-            deleteButton.Text = "廃棄";
+            deleteButton.Text = "削除";
             deleteButton.Location = new Point(690, 10);
             deleteButton.Size = new Size(75, 40);
             deleteButton.Click += (s, e) => DeleteIngredient(id, name);
@@ -163,6 +200,7 @@ namespace namamonotti2
             rowPanel.Controls.Add(nameLabel);
             rowPanel.Controls.Add(statusLabel);
             rowPanel.Controls.Add(editButton);
+            rowPanel.Controls.Add(completeButton);
             rowPanel.Controls.Add(deleteButton);
 
             return rowPanel;
