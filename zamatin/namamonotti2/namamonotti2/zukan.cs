@@ -132,8 +132,8 @@ namespace namamonotti2
             // カード本体（成仏済みはクリーム色、未成仏はグレーの背景）
             var card = new Panel
             {
-                Width = 120,
-                Height = 125,
+                Width = 140,
+                Height = 145,
                 BackColor = unlocked ? Color.FromArgb(255, 243, 214) : Color.FromArgb(230, 230, 230),
                 Margin = new Padding(10)
             };
@@ -150,7 +150,7 @@ namespace namamonotti2
                 {
                     e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
                     using var markFont = new Font("Yu Gothic UI", 24F, FontStyle.Bold);
-                    var markRect = new Rectangle(0, 12, 120, 52);
+                    var markRect = new Rectangle(0, 14, 140, 56);
                     TextRenderer.DrawText(e.Graphics, "？", markFont, markRect, Color.FromArgb(180, 180, 180), TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
                 }
             };
@@ -165,10 +165,10 @@ namespace namamonotti2
                 {
                     Image = charBmp,
                     SizeMode = PictureBoxSizeMode.CenterImage,
-                    Width = 120,
-                    Height = 52,
-                    Top = 12,
-                    Left = 0,
+                    Width = 132,
+                    Height = 56,
+                    Top = 14,
+                    Left = 4,
                     BackColor = Color.Transparent
                 };
             }
@@ -181,7 +181,7 @@ namespace namamonotti2
                 TextAlign = ContentAlignment.MiddleCenter,
                 ForeColor = unlocked ? Color.FromArgb(107, 74, 85) : Color.FromArgb(180, 180, 180)
             };
-            nameLabel.SetBounds(0, 68, 120, 20);
+            nameLabel.SetBounds(4, 76, 132, 24);
 
             // 成仏回数（未成仏なら「未成仏」と表示）
             var countLabel = new Label
@@ -191,7 +191,7 @@ namespace namamonotti2
                 TextAlign = ContentAlignment.MiddleCenter,
                 ForeColor = unlocked ? Color.FromArgb(63, 158, 126) : Color.FromArgb(177, 138, 150)
             };
-            countLabel.SetBounds(0, 93, 120, 20);
+            countLabel.SetBounds(4, 104, 132, 24);
 
             // ラベルたちをカードに追加（未成仏時はドット絵キャラなし）
             card.Controls.AddRange([nameLabel, countLabel]);

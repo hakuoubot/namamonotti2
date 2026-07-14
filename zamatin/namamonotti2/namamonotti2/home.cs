@@ -82,7 +82,8 @@ namespace namamonotti2
             var items = new List<StockCardData>();
 
             using var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["wiz"].ConnectionString);
-            using var cmd = new SqlCommand("SELECT FOODNAME, DATELANE, GENRU FROM dbo.food_Table ORDER BY DATELANE ASC", conn);
+            // SITUATIONが入っている行は「成仏」済み（図鑑にカウント済み）なので在庫一覧には出さない
+            using var cmd = new SqlCommand("SELECT FOODNAME, DATELANE, GENRU FROM dbo.food_Table WHERE SITUATION IS NULL ORDER BY DATELANE ASC", conn);
 
             conn.Open();
             using var reader = cmd.ExecuteReader();
@@ -146,7 +147,7 @@ namespace namamonotti2
             };
 
             // カード本体（角丸っぽく見せるため、枠線は自前で描画している）
-            var card = new Panel { Width = 130, Height = 140, BackColor = bg, Margin = new Padding(6), Cursor = Cursors.Hand };
+            var card = new Panel { Width = 150, Height = 160, BackColor = bg, Margin = new Padding(6), Cursor = Cursors.Hand };
             card.Paint += (s, e) =>
             {
                 using var pen = new Pen(Color.FromArgb(255, 208, 224), 2);
@@ -161,15 +162,15 @@ namespace namamonotti2
             {
                 Image = charBmp,
                 SizeMode = PictureBoxSizeMode.CenterImage,
-                Width = 130,
-                Height = 55,
-                Top = 8,
-                Left = 0,
+                Width = 142,
+                Height = 60,
+                Top = 10,
+                Left = 4,
                 BackColor = Color.Transparent
             };
-            var name = new Label { Text = item.Name, Font = new Font("Yu Gothic UI", 9F, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, Width = 130, Height = 22, Top = 65, Left = 0, ForeColor = Color.FromArgb(107, 74, 85) };
-            var daysLabel = new Label { Text = days, Font = new Font("Yu Gothic UI", 9F), TextAlign = ContentAlignment.MiddleCenter, Width = 130, Height = 18, Top = 85, Left = 0, ForeColor = badgeColor };
-            var badge = new Label { Text = badgeText, Font = new Font("Yu Gothic UI", 8F, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, Width = 70, Height = 20, Top = 108, Left = 30, BackColor = badgeColor, ForeColor = Color.White };
+            var name = new Label { Text = item.Name, Font = new Font("Yu Gothic UI", 9F, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, Width = 142, Height = 24, Top = 74, Left = 4, ForeColor = Color.FromArgb(107, 74, 85) };
+            var daysLabel = new Label { Text = days, Font = new Font("Yu Gothic UI", 9F), TextAlign = ContentAlignment.MiddleCenter, Width = 142, Height = 20, Top = 98, Left = 4, ForeColor = badgeColor };
+            var badge = new Label { Text = badgeText, Font = new Font("Yu Gothic UI", 8F, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter, Width = 80, Height = 22, Top = 122, Left = 35, BackColor = badgeColor, ForeColor = Color.White };
 
             card.Controls.AddRange([charImage, name, daysLabel, badge]);
 
