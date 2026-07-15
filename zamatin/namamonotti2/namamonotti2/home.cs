@@ -156,8 +156,10 @@ namespace namamonotti2
 
             // カードの中身：ドット絵キャラ・商品名・残り日数・状態バッジの4パーツ
             // 絵文字だった部分を、自作のドット絵キャラ画像に置き換え（1マス1px＝64px四方）
-            // カテゴリごとに3パターンある中から、表示のたびにランダムで1つ選ぶ
-            var charBmp = PixelArt.Render(PixelArt.GetRandomPattern(item.CategoryName), 1, Color.Black, Color.White);
+            // カテゴリごとに3パターンある中から、表示のたびにランダムで1つ選ぶ。
+            // ただしゾンビ状態（期限切れ）の場合は、カテゴリに関係なく専用のゾンビキャラを表示する。
+            string charKey = item.State == CharacterState.Zombie ? "ゾンビ" : item.CategoryName;
+            var charBmp = PixelArt.Render(PixelArt.GetRandomPattern(charKey), 1, Color.Black, Color.White);
             var charImage = new PictureBox
             {
                 Image = charBmp,
