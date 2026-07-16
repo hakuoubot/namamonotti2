@@ -31,6 +31,10 @@ namespace namamonotti2
             ("🍱", "その他"),
         ];
 
+        // ゾンビ枠：成仏できずに廃棄してしまった食材をまとめて記録する特別枠（カテゴリ横断）
+        const string ZombieName = "ゾンビ";
+        const string ZombieEmoji = "🧟";
+
         public zukan()
         {
             InitializeComponent();
@@ -118,6 +122,9 @@ namespace namamonotti2
                 })
                 .ToList();
 
+            // ゾンビ枠：カテゴリ問わず「廃棄」した回数がそのままカウントになる（1件でも廃棄したら解放）
+            categories.Add(new DexCategoryData(ZombieEmoji, ZombieName, totalHaiki > 0, totalHaiki));
+
             return (categories, totalSeibutsu, totalHaiki);
         }
 
@@ -128,6 +135,7 @@ namespace namamonotti2
         Panel MakeDexCard(DexCategoryData cat)
         {
             bool unlocked = cat.Unlocked;
+            bool isZombie = cat.Name == ZombieName;
 
             // カード本体（成仏済みはクリーム色、未成仏はグレーの背景）
             var card = new Panel
@@ -186,7 +194,7 @@ namespace namamonotti2
             // 成仏回数（未成仏なら「未成仏」と表示）
             var countLabel = new Label
             {
-                Text = unlocked ? $"×{cat.Count}" : "未成仏",
+                Text = unlocked ? $"×{cat.Count}" : (isZombie ? "未発見" : "未成仏"),
                 Font = new Font("Yu Gothic UI", 9F, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter,
                 ForeColor = unlocked ? Color.FromArgb(63, 158, 126) : Color.FromArgb(177, 138, 150)
