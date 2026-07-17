@@ -71,7 +71,7 @@ namespace namamonotti2
                     int daysLeft = (expiry.Date - DateTime.Today).Days;
                     var (badgeColor, statusText) = StateFor(daysLeft);
 
-                    contentArea.Controls.Add(MakeRow(id, EmojiFor(category), name, category, count, unit, expiry, statusText, badgeColor));
+                    contentArea.Controls.Add(MakeRow(id, EmojiFor(category), name, category, count, unit, expiry, statusText, badgeColor, daysLeft));
                 }
             }
             catch (Exception ex)
@@ -166,25 +166,27 @@ namespace namamonotti2
         }
 
         // 1件ぶんの行（Panel）を組み立てる
-        Panel MakeRow(int id, string emoji, string name, string category, decimal count, string unit, DateTime expiry, string statusText, Color statusColor)
+        Panel MakeRow(int id, string emoji, string name, string category, decimal count, string unit, DateTime expiry, string statusText, Color statusColor, int daysLeft)
         {
             Panel rowPanel = new Panel();
-            rowPanel.Size = new Size(850, 60);
+            rowPanel.Size = new Size(850, 76);
             rowPanel.BackColor = Color.White;
             rowPanel.Margin = new Padding(10, 5, 10, 5);
 
-            // 🎨 絵文字ラベル
-            Label iconLabel = new Label();
-            iconLabel.Text = emoji;
-            iconLabel.Font = new Font("Segoe UI Emoji", 18);
-            iconLabel.Location = new Point(10, 15);
-            iconLabel.AutoSize = true;
+            // 🖼️ ドット絵アイコン（図鑑と同じくパターン1固定。ただし期限切れならカテゴリ問わずゾンビキャラを表示）
+            string charKey = daysLeft < 0 ? "ゾンビ" : category;
+            PictureBox iconImage = new PictureBox();
+            iconImage.Image = PixelArt.Render(PixelArt.GetFirstPattern(charKey), 1, Color.Black, Color.White);
+            iconImage.SizeMode = PictureBoxSizeMode.Zoom;
+            iconImage.Size = new Size(56, 56);
+            iconImage.Location = new Point(10, 10);
+            iconImage.BackColor = Color.Transparent;
 
             // 🏷️ 名前ラベル
             Label nameLabel = new Label();
             nameLabel.Text = $"{name}（{count}{unit}）";
             nameLabel.Font = new Font("Yu Gothic UI", 12, FontStyle.Bold);
-            nameLabel.Location = new Point(80, 18);
+            nameLabel.Location = new Point(76, 26);
             nameLabel.AutoSize = true;
 
             // ⏳ 状態バッジ風のラベル
@@ -192,32 +194,32 @@ namespace namamonotti2
             statusLabel.Text = statusText;
             statusLabel.Font = new Font("Yu Gothic UI", 10);
             statusLabel.BackColor = statusColor;
-            statusLabel.Location = new Point(280, 18);
+            statusLabel.Location = new Point(280, 26);
             statusLabel.AutoSize = true;
             statusLabel.Padding = new Padding(5);
 
             // 🛠️ [編集] ボタン：編集ダイアログを開いてfood_Tableを更新する
             Button editButton = new Button();
             editButton.Text = "編集";
-            editButton.Location = new Point(510, 10);
+            editButton.Location = new Point(510, 18);
             editButton.Size = new Size(75, 40);
             editButton.Click += (s, e) => EditIngredient(id, name, category, count, unit, expiry);
 
             // 🙏 [成仏] ボタン：確認のうえ、SITUATIONに記録して使い切ったことを残す（図鑑にカウント）
             Button completeButton = new Button();
             completeButton.Text = "成仏";
-            completeButton.Location = new Point(600, 10);
+            completeButton.Location = new Point(600, 18);
             completeButton.Size = new Size(75, 40);
             completeButton.Click += (s, e) => CompleteIngredient(id, name, count, unit);
 
             // 🗑️ [削除] ボタン：確認のうえ、food_Tableから該当行を完全に削除する（図鑑への登録は行わない）
             Button deleteButton = new Button();
             deleteButton.Text = "削除";
-            deleteButton.Location = new Point(690, 10);
+            deleteButton.Location = new Point(690, 18);
             deleteButton.Size = new Size(75, 40);
             deleteButton.Click += (s, e) => DeleteIngredient(id, name);
 
-            rowPanel.Controls.Add(iconLabel);
+            rowPanel.Controls.Add(iconImage);
             rowPanel.Controls.Add(nameLabel);
             rowPanel.Controls.Add(statusLabel);
             rowPanel.Controls.Add(editButton);
