@@ -147,7 +147,7 @@ namespace namamonotti2
             //
             unitBox.DropDownStyle = ComboBoxStyle.DropDownList;
             unitBox.Font = new Font("Yu Gothic UI", 10F);
-            unitBox.Items.AddRange(new object[] { "個", "本", "g", "ml", "袋", "枚" });
+            unitBox.Items.AddRange(new object[] { "個", "本", "g", "ml", "袋", "枚", "匹" });
             unitBox.Location = new Point(130, 192);
             unitBox.Name = "unitBox";
             unitBox.Size = new Size(120, 25);

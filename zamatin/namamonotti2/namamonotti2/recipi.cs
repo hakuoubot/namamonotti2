@@ -87,6 +87,7 @@ namespace namamonotti2
         }
 
         // DB(food_Table)から在庫食材を取得する（成仏・廃棄済みは除外、期限が近い順）
+        // 期限切れ（ゾンビ状態）の食材は、傷んでいて使えないためレシピ提案の対象から除外する
         static List<(string Name, string Category, int DaysLeft)> GetInventoryFromDb()
         {
             var items = new List<(string, string, int)>();
@@ -104,6 +105,7 @@ namespace namamonotti2
                 string category = reader["GENRU"].ToString() ?? "その他";
                 DateTime expiry = Convert.ToDateTime(reader["DATELANE"]);
                 int daysLeft = (expiry.Date - DateTime.Today).Days;
+                if (daysLeft < 0) continue; // ゾンビ（期限切れ）は除外
                 items.Add((name, category, daysLeft));
             }
             return items;

@@ -32,7 +32,7 @@ namespace namamonotti2
             MinimizeBox = false;
 
             _categoryBox.Items.AddRange(new object[] { "肉", "魚", "野菜", "乳製品", "卵", "その他" });
-            _unitBox.Items.AddRange(new object[] { "個", "本", "g", "ml", "袋", "枚" });
+            _unitBox.Items.AddRange(new object[] { "個", "本", "g", "ml", "袋", "枚", "匹" });
 
             _nameBox.Text = name;
             _categoryBox.SelectedItem = category;

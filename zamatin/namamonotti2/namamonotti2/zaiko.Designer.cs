@@ -47,11 +47,11 @@ namespace namamonotti2
             contentArea.AutoScroll = true;
             contentArea.Dock = DockStyle.Fill;
             contentArea.FlowDirection = FlowDirection.TopDown;
-            contentArea.WrapContents = false;
             contentArea.Location = new Point(0, 25);
             contentArea.Name = "contentArea";
             contentArea.Size = new Size(880, 535);
             contentArea.TabIndex = 1;
+            contentArea.WrapContents = false;
             // 
             // zaiko
             // 

@@ -97,24 +97,36 @@ namespace namamonotti2
                 LoadIngredients();
         }
 
-        // 「成仏」ボタンの処理：確認のうえ、food_TableのSITUATIONに記録して「使い切った」ことを残す
-        // （行は削除せず残す。図鑑側はSITUATIONが入っている行をカテゴリごとに集計してカウントする想定）
-        private void CompleteIngredient(int id, string name)
+        // 「成仏」ボタンの処理：使った分量を入力してもらい、
+        // 在庫数以上ならSITUATIONを「成仏」に記録（図鑑にカウント）、
+        // 在庫数未満ならその分だけFOODCOUNTを減らすだけ（在庫に残す、成仏にはしない）
+        private void CompleteIngredient(int id, string name, decimal foodCount, string unit)
         {
-            var result = MessageBox.Show(
-                $"「{name}」を成仏させますか？（図鑑にカウントされます）",
-                "成仏の確認", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (result != DialogResult.Yes) return;
+            using var form = new CompleteQuantityForm(name, foodCount, unit);
+            if (form.ShowDialog(FindForm()) != DialogResult.OK) return;
+
+            decimal usedQty = form.UsedQty;
+            if (usedQty <= 0) return;
 
             try
             {
                 using var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["wiz"].ConnectionString);
-                using var cmd = new SqlCommand("UPDATE dbo.food_Table SET SITUATION = @SITUATION WHERE ID = @ID", conn);
-                cmd.Parameters.Add("@SITUATION", SqlDbType.VarChar).Value = "成仏";
-                cmd.Parameters.Add("@ID", SqlDbType.Int).Value = id;
-
                 conn.Open();
-                cmd.ExecuteNonQuery();
+
+                if (usedQty >= foodCount)
+                {
+                    using var cmd = new SqlCommand("UPDATE dbo.food_Table SET SITUATION = @SITUATION WHERE ID = @ID", conn);
+                    cmd.Parameters.Add("@SITUATION", SqlDbType.VarChar).Value = "成仏";
+                    cmd.Parameters.Add("@ID", SqlDbType.Int).Value = id;
+                    cmd.ExecuteNonQuery();
+                }
+                else
+                {
+                    using var cmd = new SqlCommand("UPDATE dbo.food_Table SET FOODCOUNT = @FOODCOUNT WHERE ID = @ID", conn);
+                    cmd.Parameters.Add("@FOODCOUNT", SqlDbType.Decimal).Value = foodCount - usedQty;
+                    cmd.Parameters.Add("@ID", SqlDbType.Int).Value = id;
+                    cmd.ExecuteNonQuery();
+                }
             }
             catch (Exception ex)
             {
@@ -196,7 +208,7 @@ namespace namamonotti2
             completeButton.Text = "成仏";
             completeButton.Location = new Point(600, 10);
             completeButton.Size = new Size(75, 40);
-            completeButton.Click += (s, e) => CompleteIngredient(id, name);
+            completeButton.Click += (s, e) => CompleteIngredient(id, name, count, unit);
 
             // 🗑️ [削除] ボタン：確認のうえ、food_Tableから該当行を完全に削除する（図鑑への登録は行わない）
             Button deleteButton = new Button();

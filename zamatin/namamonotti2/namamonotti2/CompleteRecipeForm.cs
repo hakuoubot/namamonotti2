@@ -9,17 +9,18 @@ using Microsoft.Data.SqlClient;
 
 namespace namamonotti2
 {
-    // レシピを「作った」後、実際に使った食材を選んで成仏させるためのダイアログ。
-    // 在庫一覧をチェックボックス付きで表示し、レシピの使用食材に名前が近いものは事前にチェックしておく。
+    // レシピを「作った」後、実際に使った分量を選んで在庫に反映するためのダイアログ。
+    // 在庫一覧を数量入力つきで表示し、レシピの使用食材に名前が近いものは在庫数を初期値にしておく。
+    // 入力した数量が在庫数以上なら「成仏」として記録し、在庫数未満ならその分だけ在庫数を減らす（成仏にはしない）。
     public class CompleteRecipeForm : Form
     {
-        readonly CheckedListBox _list = new() { Font = new Font("Yu Gothic UI", 10F), CheckOnClick = true, IntegralHeight = false };
-        readonly List<int> _itemIds = [];
+        readonly Panel _listPanel = new() { AutoScroll = true };
+        readonly List<(int Id, decimal FoodCount, NumericUpDown Input)> _rows = [];
 
         public CompleteRecipeForm(string usedIngredients)
         {
-            Text = "使った食材を選んで成仏";
-            Width = 380;
+            Text = "使った分量を選んで反映";
+            Width = 420;
             Height = 420;
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -28,12 +29,14 @@ namespace namamonotti2
 
             var hint = new Label
             {
-                Text = "レシピで使った食材にチェックを入れてください。",
-                AutoSize = true,
-                Location = new Point(16, 12)
+                Text = "レシピで使った分量を入力してください（在庫数未満なら在庫数を減らすだけにします）。",
+                AutoSize = false,
+                Size = new Size(370, 32),
+                Location = new Point(16, 10)
             };
 
-            _list.SetBounds(16, 40, 330, 260);
+            _listPanel.SetBounds(16, 44, 370, 256);
+            _listPanel.BorderStyle = BorderStyle.FixedSingle;
 
             var usedNames = usedIngredients
                 .Split([',', '、', '，'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -47,50 +50,86 @@ namespace namamonotti2
                     conn);
                 conn.Open();
                 using var reader = cmd.ExecuteReader();
+                int y = 4;
                 while (reader.Read())
                 {
                     int id = Convert.ToInt32(reader["ID"]);
                     string name = reader["FOODNAME"].ToString() ?? "";
-                    string count = reader["FOODCOUNT"].ToString() ?? "";
+                    decimal foodCount = Convert.ToDecimal(reader["FOODCOUNT"]);
                     string unit = reader["UNIT"].ToString() ?? "";
 
-                    _itemIds.Add(id);
-                    int index = _list.Items.Add($"{name}（{count}{unit}）");
-
-                    bool preChecked = !string.IsNullOrEmpty(name) &&
+                    bool matched = !string.IsNullOrEmpty(name) &&
                         usedNames.Any(u => !string.IsNullOrEmpty(u) && (name.Contains(u) || u.Contains(name)));
-                    if (preChecked)
-                        _list.SetItemChecked(index, true);
+
+                    var nameLabel = new Label
+                    {
+                        Text = $"{name}（在庫 {foodCount}{unit}）",
+                        AutoSize = false,
+                        Size = new Size(220, 28),
+                        Location = new Point(6, y),
+                        TextAlign = ContentAlignment.MiddleLeft
+                    };
+
+                    bool isWhole = foodCount == Math.Floor(foodCount);
+                    var qtyInput = new NumericUpDown
+                    {
+                        Minimum = 0,
+                        Maximum = Math.Max(foodCount, 0),
+                        DecimalPlaces = isWhole ? 0 : 2,
+                        Increment = isWhole ? 1 : 0.5m,
+                        Value = matched ? foodCount : 0,
+                        Size = new Size(80, 28),
+                        Location = new Point(232, y),
+                        TextAlign = HorizontalAlignment.Right
+                    };
+
+                    var unitLabel = new Label
+                    {
+                        Text = unit,
+                        AutoSize = false,
+                        Size = new Size(40, 28),
+                        Location = new Point(316, y),
+                        TextAlign = ContentAlignment.MiddleLeft
+                    };
+
+                    _listPanel.Controls.AddRange(new Control[] { nameLabel, qtyInput, unitLabel });
+                    _rows.Add((id, foodCount, qtyInput));
+                    y += 32;
                 }
             }
             catch (Exception ex)
             {
-                _list.Items.Add($"在庫の取得に失敗しました: {ex.Message}");
+                _listPanel.Controls.Add(new Label
+                {
+                    Text = $"在庫の取得に失敗しました: {ex.Message}",
+                    AutoSize = true,
+                    ForeColor = Color.Red,
+                    Location = new Point(6, 4)
+                });
             }
 
-            var okButton = new Button { Text = "成仏させる", DialogResult = DialogResult.OK };
-            okButton.SetBounds(16, 310, 155, 36);
+            var okButton = new Button { Text = "反映する", DialogResult = DialogResult.OK };
+            okButton.SetBounds(16, 310, 175, 36);
             okButton.Click += OkButton_Click;
 
             var cancelButton = new Button { Text = "キャンセル", DialogResult = DialogResult.Cancel };
-            cancelButton.SetBounds(191, 310, 155, 36);
+            cancelButton.SetBounds(211, 310, 175, 36);
 
-            Controls.AddRange(new Control[] { hint, _list, okButton, cancelButton });
+            Controls.AddRange(new Control[] { hint, _listPanel, okButton, cancelButton });
             AcceptButton = okButton;
             CancelButton = cancelButton;
         }
 
-        // 「成仏させる」ボタンの処理：チェックの入った行だけSITUATIONを更新する
+        // 「反映する」ボタンの処理：
+        // 入力数量が在庫数以上 → SITUATIONを「成仏」に更新（図鑑にカウント）
+        // 入力数量が在庫数未満 → FOODCOUNTをその分だけ減らす（在庫に残す、成仏にはしない）
         void OkButton_Click(object? sender, EventArgs e)
         {
-            var checkedIds = _list.CheckedIndices.Cast<int>()
-                .Where(i => i < _itemIds.Count)
-                .Select(i => _itemIds[i])
-                .ToList();
+            var used = _rows.Where(r => r.Input.Value > 0).ToList();
 
-            if (checkedIds.Count == 0)
+            if (used.Count == 0)
             {
-                MessageBox.Show("成仏させる食材を1つ以上選んでください。", "確認", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("使った食材の数量を1つ以上入力してください。", "確認", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 DialogResult = DialogResult.None;
                 return;
             }
@@ -98,20 +137,35 @@ namespace namamonotti2
             try
             {
                 using var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["wiz"].ConnectionString);
-                using var cmd = new SqlCommand("UPDATE dbo.food_Table SET SITUATION = @SITUATION WHERE ID = @ID", conn);
-                cmd.Parameters.Add("@SITUATION", SqlDbType.VarChar).Value = "成仏";
-                var idParam = cmd.Parameters.Add("@ID", SqlDbType.Int);
-
                 conn.Open();
-                foreach (var id in checkedIds)
+
+                using var completeCmd = new SqlCommand("UPDATE dbo.food_Table SET SITUATION = @SITUATION WHERE ID = @ID", conn);
+                completeCmd.Parameters.Add("@SITUATION", SqlDbType.VarChar).Value = "成仏";
+                var completeIdParam = completeCmd.Parameters.Add("@ID", SqlDbType.Int);
+
+                using var reduceCmd = new SqlCommand("UPDATE dbo.food_Table SET FOODCOUNT = @FOODCOUNT WHERE ID = @ID", conn);
+                var reduceCountParam = reduceCmd.Parameters.Add("@FOODCOUNT", SqlDbType.Decimal);
+                var reduceIdParam = reduceCmd.Parameters.Add("@ID", SqlDbType.Int);
+
+                foreach (var row in used)
                 {
-                    idParam.Value = id;
-                    cmd.ExecuteNonQuery();
+                    decimal usedQty = row.Input.Value;
+                    if (usedQty >= row.FoodCount)
+                    {
+                        completeIdParam.Value = row.Id;
+                        completeCmd.ExecuteNonQuery();
+                    }
+                    else
+                    {
+                        reduceCountParam.Value = row.FoodCount - usedQty;
+                        reduceIdParam.Value = row.Id;
+                        reduceCmd.ExecuteNonQuery();
+                    }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"成仏の記録に失敗しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"反映に失敗しました: {ex.Message}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.None;
             }
         }

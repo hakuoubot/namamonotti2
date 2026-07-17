@@ -1,20 +1,36 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup />
   <ItemGroup>
-    <Compile Update="zukan.cs">
+    <Compile Update="BarcodeScanForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="recipi.cs">
+    <Compile Update="CompleteQuantityForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="touroku.cs">
+    <Compile Update="CompleteRecipeForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="EditItemForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="home.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="recipi.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="touroku.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Update="zaiko.cs">
-      <SubType>Form</SubType>
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="zukan.cs">
+      <SubType>UserControl</SubType>
     </Compile>
   </ItemGroup>
 </Project>
